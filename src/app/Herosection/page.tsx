@@ -1,373 +1,566 @@
-"use client";
+'use client'
 
-import Image from "next/image";
-import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
+import Image from 'next/image'
+import Link from 'next/link'
+import { useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import type { User } from '@supabase/supabase-js'
 
-import { useCart } from "../Cartcontext";
-import { createClient } from "../lib/supabase/client";
-import SearchModal from "../SearchModal";
+import { useCart } from '../Cartcontext'
+import { createClient } from '../lib/supabase/client'
+import SearchModal from '../Searchmodal'
 
 export default function HeroSection() {
-  const router  = useRouter();
-  const supabase = createClient();
-  const { totalItems } = useCart();
+  const router = useRouter()
+  const supabase = createClient()
+  const { totalItems } = useCart()
 
-  const [mounted,    setMounted]    = useState(false);
-  const [mousePos,   setMousePos]   = useState({ x: 0, y: 0 });
-  const [user,       setUser]       = useState<User | null>(null);
-  const [isAdmin,    setIsAdmin]    = useState(false);
-  const [menuOpen,   setMenuOpen]   = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [mounted, setMounted] = useState(false)
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const [user, setUser] = useState<User | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
 
-  const heroRef     = useRef<HTMLElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      if (!heroRef.current) return;
-      const r = heroRef.current.getBoundingClientRect();
-      setMousePos({ x: (e.clientX - r.left) / r.width - 0.5, y: (e.clientY - r.top) / r.height - 0.5 });
-    };
-    window.addEventListener("mousemove", onMove);
-    return () => window.removeEventListener("mousemove", onMove);
-  }, []);
+  const heroRef = useRef<HTMLElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const rafRef = useRef<number | null>(null)
+  const targetRef = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
-    async function load() {
-      const { data } = await supabase.auth.getUser();
-      const u = data.user ?? null;
-      setUser(u); setIsAdmin(u?.app_metadata?.role === "admin");
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    async function loadUser() {
+      const { data } = await supabase.auth.getUser()
+      const u = data.user ?? null
+      setUser(u)
+      setIsAdmin(u?.app_metadata?.role === 'admin')
     }
-    load();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
-      const u = s?.user ?? null; setUser(u); setIsAdmin(u?.app_metadata?.role === "admin");
-    });
-    return () => subscription.unsubscribe();
-  }, [supabase]);
+
+    loadUser()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_e, session) => {
+      const u = session?.user ?? null
+      setUser(u)
+      setIsAdmin(u?.app_metadata?.role === 'admin')
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase])
 
   useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, []);
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  useEffect(() => {
+    const handleMove = (e: PointerEvent) => {
+      if (!heroRef.current) return
+
+      const rect = heroRef.current.getBoundingClientRect()
+      const x = (e.clientX - rect.left) / rect.width - 0.5
+      const y = (e.clientY - rect.top) / rect.height - 0.5
+
+      targetRef.current = {
+        x: Math.max(-0.5, Math.min(0.5, x)),
+        y: Math.max(-0.5, Math.min(0.5, y)),
+      }
+
+      if (rafRef.current) return
+
+      rafRef.current = window.requestAnimationFrame(() => {
+        rafRef.current = null
+        setMousePos(targetRef.current)
+      })
+    }
+
+    window.addEventListener('pointermove', handleMove, { passive: true })
+    return () => {
+      window.removeEventListener('pointermove', handleMove)
+      if (rafRef.current) window.cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
 
   async function handleLogout() {
-    await supabase.auth.signOut();
-    setMenuOpen(false); router.push("/"); router.refresh();
+    await supabase.auth.signOut()
+    setMenuOpen(false)
+    router.push('/')
+    router.refresh()
   }
 
-  const avatarLetter = (user?.user_metadata?.full_name?.[0] || user?.email?.[0] || "U").toUpperCase();
+  const avatarLetter = (user?.user_metadata?.full_name?.[0] || user?.email?.[0] || 'U').toUpperCase()
 
   const NAV_LINKS = [
-    { label: "Reviews", href: "/reviews"  },
-    { label: "Home",    href: "/"         },
-    { label: "About",   href: "/about"    },
-    { label: "Contact", href: "/contact"  },
-  ];
+    { label: 'Reviews', href: '/reviews' },
+    { label: 'Home', href: '/' },
+    { label: 'About', href: '/about' },
+    { label: 'Contact', href: '/contact' },
+  ]
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Anton+SC&family=Barlow+Condensed:wght@400;500;600;700&family=Bentham&display=swap');
-        .f-anton   { font-family:'Anton SC',sans-serif; }
-        .f-barlow  { font-family:'Barlow Condensed',sans-serif; }
-        .f-bentham { font-family:'Bentham',serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Anton+SC&family=Barlow+Condensed:wght@300;400;600&family=Bentham&display=swap');
 
-        @keyframes fadeUp    { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
-        @keyframes slideR    { from{opacity:0;transform:translateX(48px) scale(.97)} to{opacity:1;transform:translateX(0) scale(1)} }
-        @keyframes floatY    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-13px)} }
-        @keyframes ticker    { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-        @keyframes grain     { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-2%,-2%)} 50%{transform:translate(2%,1%)} 75%{transform:translate(-1%,2%)} }
-        @keyframes dropIn    { from{opacity:0;transform:translateY(-8px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+        .font-anton { font-family: 'Anton SC', sans-serif; }
+        .font-barlow { font-family: 'Barlow Condensed', sans-serif; }
+        .font-bentham { font-family: 'Bentham', serif; }
 
-        .a-fadeUp  { animation:fadeUp  .85s cubic-bezier(.22,1,.36,1) both }
-        .a-fadeIn  { animation:fadeIn  .9s ease both }
-        .a-slideR  { animation:slideR  1.1s cubic-bezier(.22,1,.36,1) both }
-        .a-float   { animation:floatY  6s ease-in-out infinite }
-        .a-ticker  { animation:ticker  22s linear infinite; display:flex; width:max-content }
-        .a-dropIn  { animation:dropIn  .22s ease both }
-
-        .d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
-        .d4{animation-delay:.4s}.d5{animation-delay:.5s}.d7{animation-delay:.7s}.d9{animation-delay:.9s}
-
-        .grain-layer {
-          position:absolute;inset:-50%;width:200%;height:200%;pointer-events:none;opacity:.035;
-          background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          animation:grain .5s steps(1) infinite;
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(22px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
 
-        /* icon circle button */
-        .ic {
-          width:42px;height:42px;border-radius:9999px;
-          display:flex;align-items:center;justify-content:center;flex-shrink:0;
-          border:1.5px solid rgba(253,255,227,.22);color:#FDFFE3;
-          transition:border-color .2s,background .2s,transform .18s;
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
         }
-        .ic:hover{border-color:rgba(253,255,227,.6);background:rgba(253,255,227,.09);transform:translateY(-1px)}
 
-        /* underline nav link */
-        .nl{position:relative}
-        .nl::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1.5px;background:#FDFFE3;transition:width .26s ease}
-        .nl:hover::after{width:100%}
+        @keyframes float {
+          0%,100% { transform: translateY(0px); }
+          50%     { transform: translateY(-10px); }
+        }
 
-        /* shop CTA */
-        .btn-shop{position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
-        .btn-shop::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,.1);transform:translateX(-100%);transition:transform .3s ease}
-        .btn-shop:hover::before{transform:translateX(0)}
-        .btn-shop:hover{transform:scale(1.03);box-shadow:0 8px 26px rgba(0,97,49,.36)}
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
 
-        /* shadow helpers */
-        .ts {text-shadow:0 2px 10px rgba(0,0,0,.36),0 6px 20px rgba(0,0,0,.24)}
-        .ts2{text-shadow:0 1px 5px rgba(0,0,0,.26),0 3px 11px rgba(0,0,0,.16)}
-        .ds {filter:drop-shadow(0 10px 28px rgba(0,0,0,.3)) drop-shadow(0 3px 10px rgba(0,0,0,.2))}
-        .ds2{filter:drop-shadow(0 18px 48px rgba(0,0,0,.48)) drop-shadow(0 4px 15px rgba(0,0,0,.3))}
+        @keyframes mobileSlide {
+          from { opacity: 0; transform: translateY(-10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fadeUp { animation: fadeUp .8s cubic-bezier(.22,1,.36,1) both; }
+        .animate-fadeIn { animation: fadeIn .7s ease both; }
+        .animate-float { animation: float 6.5s ease-in-out infinite; }
+        .animate-marquee { animation: marquee 20s linear infinite; }
+
+        .hero-nav-link {
+          position: relative;
+          transition: color .2s ease;
+        }
+        .hero-nav-link::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: -4px;
+          width: 0;
+          height: 1px;
+          background: #FDFFE3;
+          transition: width .25s ease;
+        }
+        .hero-nav-link:hover::after { width: 100%; }
+
+        .icon-circle {
+          width: 40px;
+          height: 40px;
+          border-radius: 9999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid rgba(253,255,227,0.18);
+          background: rgba(255,255,255,0.06);
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          transition: transform .2s ease, background .2s ease, border-color .2s ease;
+          will-change: transform;
+        }
+        .icon-circle:hover {
+          border-color: rgba(253,255,227,0.55);
+          background: rgba(255,255,255,0.12);
+          transform: translateY(-1px);
+        }
+
+        .btn-shop {
+          position: relative;
+          overflow: hidden;
+          transition: transform .2s ease, box-shadow .2s ease;
+          will-change: transform;
+        }
+        .btn-shop:hover {
+          transform: translateY(-1px) scale(1.01);
+          box-shadow: 0 12px 30px rgba(0,0,0,.18);
+        }
+
+        .grain-overlay {
+          position:absolute;
+          inset:-50%;
+          width:200%;
+          height:200%;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          opacity:0.03;
+          pointer-events:none;
+          transform: translate3d(0,0,0);
+        }
+
+        .premium-text {
+          text-shadow: 0 2px 8px rgba(0,0,0,.28), 0 8px 24px rgba(0,0,0,.18);
+        }
+
+        .premium-soft {
+          text-shadow: 0 1px 4px rgba(0,0,0,.2);
+        }
       `}</style>
 
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
-      {/* ══════ NAVBAR ══════ */}
-      <nav className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-5 sm:px-10 lg:px-16 py-5">
-
-        {/* Logo */}
-        <div className={`a-fadeIn shrink-0 ${mounted?"":"opacity-0"}`}>
-          <Image src="/logo.png" alt="Logo" width={140} height={56}
-            className="h-10 sm:h-12 w-auto object-contain brightness-0 invert sepia saturate-[3] hue-rotate-[55deg] scale-110 origin-left ds"
-            priority />
+      <section
+        id="hero-section"
+        ref={heroRef}
+        className="relative w-full min-h-[100svh] overflow-hidden bg-[#00612E] text-[#FDFFE3]"
+      >
+        {/* background */}
+        <div className="absolute inset-0">
+          <Image
+            src="/hero.png"
+            alt=""
+            fill
+            sizes="100vw"
+            priority
+            aria-hidden
+            className="object-cover opacity-[0.11]"
+          />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(245,247,0,0.14),transparent_55%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/25" />
         </div>
 
-        {/* Desktop links — 13px, spaced out */}
-        <ul className={`hidden md:flex items-center gap-10 f-barlow font-semibold uppercase text-[#FDFFE3]/80 ts2 a-fadeIn d2 ${mounted?"":"opacity-0"}`}
-            style={{ fontSize: 13, letterSpacing: '0.24em' }}>
-          {NAV_LINKS.map(l => (
-            <li key={l.label}>
-              <Link href={l.href} className="nl hover:text-[#FDFFE3] transition-colors duration-200">{l.label}</Link>
-            </li>
-          ))}
-        </ul>
+        {/* mouse follow glow - lightweight */}
+        <div
+          className="pointer-events-none absolute z-[2] hidden lg:block"
+          style={{
+            width: '500px',
+            height: '500px',
+            borderRadius: '9999px',
+            background: 'radial-gradient(circle, rgba(245,247,0,0.10) 0%, transparent 68%)',
+            transform: `translate3d(calc(-50% + ${mousePos.x * 28}px), calc(-50% + ${mousePos.y * 28}px), 0)`,
+            left: '50%',
+            top: '52%',
+            willChange: 'transform',
+          }}
+        />
 
-        {/* Right icons */}
-        <div className={`flex items-center gap-2 a-fadeIn d3 ${mounted?"":"opacity-0"}`}>
+        <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden">
+          <div className="grain-overlay" />
+        </div>
 
-          <button onClick={() => setSearchOpen(true)} className="ic ds" aria-label="Search">
-            <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" strokeLinecap="round"/>
-            </svg>
-          </button>
-
-          <Link href="/cart" className="ic ds relative" aria-label="Cart">
-            <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <path d="M16 10a4 4 0 01-8 0"/>
-            </svg>
-            {mounted && totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#FDFFE3] text-[#00612E] text-[10px] flex items-center justify-center font-bold">
-                {totalItems > 9 ? "9+" : totalItems}
-              </span>
-            )}
-          </Link>
-
-          {/* Avatar — only render after mount to avoid hydration mismatch causing corner artifact */}
-          {mounted && (
-            user ? (
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setMenuOpen(v => !v)}
-                  className="w-[42px] h-[42px] rounded-full flex items-center justify-center text-sm font-bold bg-[#FDFFE3] text-[#00612E] ds transition hover:scale-105 shrink-0"
-                >
-                  {avatarLetter}
-                </button>
-                {menuOpen && (
-                  <div className="a-dropIn absolute right-0 top-[52px] w-56 rounded-2xl overflow-hidden shadow-2xl border border-[#FDFFE3]/12 z-50"
-                       style={{ background:'rgba(0,80,38,0.97)', backdropFilter:'blur(20px)' }}>
-                    <div className="px-4 py-3 border-b border-[#FDFFE3]/10">
-                      <p className="text-sm font-semibold text-[#FDFFE3] truncate">{user.user_metadata?.full_name || "User"}</p>
-                      <p className="text-xs text-[#FDFFE3]/50 truncate mt-0.5">{user.email}</p>
-                    </div>
-                    {isAdmin && <Link href="/adminPanel" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[#FDFFE3] hover:bg-[#FDFFE3]/8 transition">⚙️ Admin Panel</Link>}
-                    <Link href="/orders"  onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[#FDFFE3]/82 hover:bg-[#FDFFE3]/8 transition">📦 My Orders</Link>
-                    <Link href="/reviews" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[#FDFFE3]/82 hover:bg-[#FDFFE3]/8 transition">⭐ Reviews</Link>
-                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[#ffb3b3] hover:bg-[#FDFFE3]/8 transition">🚪 Logout</button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link href="/login" className="ic f-barlow font-semibold uppercase text-[#FDFFE3]/88 ds"
-                    style={{ width:'auto', paddingInline:16, fontSize:11, letterSpacing:'0.22em' }}>
-                Login
-              </Link>
-            )
-          )}
-
-          {/* Hamburger */}
-          <button onClick={() => setMobileOpen(v => !v)} className="ic md:hidden" aria-label="Menu">
-            <div className="flex flex-col gap-[5px] w-5">
-              <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen?"translate-y-[7px] rotate-45":""}`}/>
-              <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen?"opacity-0":""}`}/>
-              <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen?"-translate-y-[7px] -rotate-45":""}`}/>
+        {/* nav */}
+        <nav className="absolute top-0 left-0 right-0 z-30">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8 lg:py-5">
+            <div className={`animate-fadeIn ${mounted ? '' : 'opacity-0'}`}>
+              <Image
+                src="/logo.png"
+                alt="Logo"
+                width={160}
+                height={60}
+                className="h-10 w-auto object-contain sm:h-12 brightness-0 invert sepia saturate-[3] hue-rotate-[55deg]"
+                priority
+              />
             </div>
-          </button>
-        </div>
-      </nav>
 
-      {/* MOBILE MENU */}
-      {mobileOpen && (
-        <div className="a-dropIn absolute top-[72px] left-3 right-3 z-40 rounded-3xl border border-[#FDFFE3]/12 p-4 md:hidden"
-             style={{ background:'rgba(0,80,38,0.97)', backdropFilter:'blur(22px)' }}>
-          <ul className="space-y-1 mb-3">
-            {NAV_LINKS.map(l => (
-              <li key={l.label}>
-                <Link href={l.href} onClick={() => setMobileOpen(false)}
-                  className="block rounded-xl px-4 py-3 f-barlow font-semibold uppercase text-[#FDFFE3]/75 hover:bg-[#FDFFE3]/8 hover:text-[#FDFFE3] transition"
-                  style={{ fontSize:13, letterSpacing:'0.2em' }}>
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => { setMobileOpen(false); setSearchOpen(true); }}
-              className="rounded-xl border border-[#FDFFE3]/12 py-3 text-center f-barlow text-sm text-[#FDFFE3]/78 hover:bg-[#FDFFE3]/8 transition">
-              🔍 Search
-            </button>
-            <Link href="/cart" onClick={() => setMobileOpen(false)}
-              className="rounded-xl border border-[#FDFFE3]/12 py-3 text-center f-barlow text-sm text-[#FDFFE3]/78 hover:bg-[#FDFFE3]/8 transition">
-              🛒 Cart {mounted && totalItems > 0 ? `(${totalItems})` : ""}
-            </Link>
-            {!user ? (
-              <Link href="/login" onClick={() => setMobileOpen(false)}
-                className="col-span-2 rounded-xl bg-[#FDFFE3] py-3 text-center f-barlow text-sm font-semibold text-[#00612E] hover:opacity-90 transition">
-                Login
-              </Link>
-            ) : (
-              <>
-                {isAdmin && (
-                  <Link href="/adminPanel" onClick={() => setMobileOpen(false)}
-                    className="col-span-2 rounded-xl border border-[#FDFFE3]/10 py-3 text-center f-barlow text-sm text-[#FDFFE3]/78 hover:bg-[#FDFFE3]/8 transition">
-                    ⚙️ Admin Panel
+            <ul className={`hidden md:flex items-center gap-8 text-[11px] font-medium tracking-[3px] uppercase text-[#FDFFE3]/72 ${mounted ? 'animate-fadeIn' : 'opacity-0'}`}>
+              {NAV_LINKS.map(link => (
+                <li key={link.label}>
+                  <Link href={link.href} className="hero-nav-link hover:text-[#FDFFE3] transition-colors duration-200">
+                    {link.label}
                   </Link>
+                </li>
+              ))}
+            </ul>
+
+            <div className={`flex items-center gap-2 sm:gap-3 ${mounted ? 'animate-fadeIn' : 'opacity-0'}`}>
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="icon-circle"
+                aria-label="Search"
+              >
+                <svg width="17" height="17" fill="none" stroke="#FDFFE3" strokeWidth="1.7" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M21 21l-4.35-4.35" strokeLinecap="round" />
+                </svg>
+              </button>
+
+              <Link href="/cart" className="icon-circle relative" aria-label="Cart">
+                <svg width="17" height="17" fill="none" stroke="#FDFFE3" strokeWidth="1.7" viewBox="0 0 24 24">
+                  <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <path d="M16 10a4 4 0 01-8 0" />
+                </svg>
+                {mounted && totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-[#FDFFE3] text-[#00612E] text-[10px] flex items-center justify-center font-bold">
+                    {totalItems > 9 ? '9+' : totalItems}
+                  </span>
                 )}
-                <button onClick={handleLogout}
-                  className="col-span-2 rounded-xl border border-[#FDFFE3]/10 py-3 f-barlow text-sm text-[#ffb3b3] hover:bg-[#FDFFE3]/8 transition">
+              </Link>
+
+              {user ? (
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setMenuOpen(v => !v)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FDFFE3] text-sm font-bold text-[#00612E] transition hover:scale-105"
+                  >
+                    {avatarLetter}
+                  </button>
+
+                  {menuOpen && (
+                    <div className="absolute right-0 top-12 z-50 w-52 overflow-hidden rounded-2xl border border-white/10 bg-[#005A2A] shadow-2xl backdrop-blur-xl">
+                      <div className="border-b border-white/10 px-4 py-3">
+                        <p className="truncate text-xs font-semibold text-[#FDFFE3]">
+                          {user.user_metadata?.full_name || 'User'}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-[#FDFFE3]/60">{user.email}</p>
+                      </div>
+
+                      {isAdmin && (
+                        <Link
+                          href="/adminPanel"
+                          onClick={() => setMenuOpen(false)}
+                          className="block px-4 py-2.5 text-sm text-[#FDFFE3]/90 transition hover:bg-white/5"
+                        >
+                          ⚙️ Admin Panel
+                        </Link>
+                      )}
+
+                      <Link
+                        href="/orders"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-[#FDFFE3]/90 transition hover:bg-white/5"
+                      >
+                        📦 My Orders
+                      </Link>
+
+                      <Link
+                        href="/reviews"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-[#FDFFE3]/90 transition hover:bg-white/5"
+                      >
+                        ⭐ Reviews
+                      </Link>
+
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full px-4 py-2.5 text-left text-sm text-[#ffb3b3] transition hover:bg-white/5"
+                      >
+                        🚪 Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="hidden h-10 items-center rounded-full border border-white/15 bg-white/10 px-4 text-[11px] font-semibold uppercase tracking-[3px] text-[#FDFFE3]/90 transition hover:bg-white/15 sm:inline-flex"
+                >
+                  Login
+                </Link>
+              )}
+
+              <button
+                onClick={() => setMobileOpen(v => !v)}
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/15 md:hidden"
+                aria-label="Menu"
+              >
+                <div className="flex w-5 flex-col gap-[5px]">
+                  <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen ? 'translate-y-[7px] rotate-45' : ''}`} />
+                  <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen ? 'opacity-0' : ''}`} />
+                  <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen ? '-translate-y-[7px] -rotate-45' : ''}`} />
+                </div>
+              </button>
+            </div>
+          </div>
+        </nav>
+
+        {/* mobile menu */}
+        {mobileOpen && (
+          <div
+            className="absolute left-4 right-4 top-[72px] z-40 rounded-3xl border border-white/10 bg-[#00612E]/98 p-4 shadow-2xl md:hidden"
+            style={{ animation: 'mobileSlide .22s ease both' }}
+          >
+            <ul className="space-y-1">
+              {NAV_LINKS.map(link => (
+                <li key={link.label}>
+                  <Link
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className="block rounded-2xl px-4 py-3 text-sm tracking-[2px] uppercase text-[#FDFFE3]/80 transition hover:bg-white/5 hover:text-[#FDFFE3]"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  setMobileOpen(false)
+                  setSearchOpen(true)
+                }}
+                className="rounded-2xl border border-white/10 px-4 py-3 text-sm text-[#FDFFE3]/85 transition hover:bg-white/5"
+              >
+                🔍 Search
+              </button>
+
+              <Link
+                href="/cart"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-2xl border border-white/10 px-4 py-3 text-center text-sm text-[#FDFFE3]/85 transition hover:bg-white/5"
+              >
+                Cart {mounted && totalItems > 0 ? `(${totalItems})` : ''}
+              </Link>
+
+              {!user ? (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="col-span-2 rounded-2xl bg-[#FDFFE3] px-4 py-3 text-center text-sm font-semibold text-[#00612E] transition hover:opacity-90"
+                >
+                  Login
+                </Link>
+              ) : (
+                <button
+                  onClick={handleLogout}
+                  className="col-span-2 rounded-2xl border border-white/10 px-4 py-3 text-sm text-[#ffb3b3] transition hover:bg-white/5"
+                >
                   Logout
                 </button>
-              </>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ══════ HERO ══════ */}
-      <section id="hero-section" ref={heroRef}
-        className="relative w-full bg-[#00612E] overflow-hidden flex flex-col"
-        style={{ minHeight:'100svh' }}>
+        {/* hero content */}
+        <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-between px-4 pb-5 pt-24 sm:px-6 lg:px-8">
+          <div className="grid flex-1 items-center gap-10 lg:grid-cols-2 lg:gap-6">
+            {/* left */}
+            <div className="max-w-2xl">
+              <p className={`mb-3 text-xs sm:text-sm uppercase tracking-[5px] text-[#FDFFE3]/65 ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+                Limited Edition Drops
+              </p>
 
-        <div className="absolute inset-0 z-0">
-          <Image src="/hero.png" alt="" fill sizes="100vw" className="object-cover opacity-[0.12]" priority aria-hidden/>
-        </div>
-        <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background:"radial-gradient(ellipse 80% 80% at 45% 55%, rgba(245,247,0,0.13) 0%, transparent 70%)" }}/>
-        <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background:"radial-gradient(ellipse 55% 100% at 72% 40%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.24) 100%)" }}/>
-        <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden"><div className="grain-layer"/></div>
-        <div className="absolute z-[2] pointer-events-none rounded-full hidden lg:block"
-          style={{ width:"460px",height:"460px",background:"radial-gradient(circle,rgba(245,247,0,0.07) 0%,transparent 70%)",top:"50%",left:"48%",
-            transform:`translate(calc(-50% + ${mousePos.x*26}px),calc(-50% + ${mousePos.y*26}px))`,transition:"transform .55s ease" }}/>
-
-        {/* Content */}
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between flex-1 px-5 sm:px-10 lg:px-16 pt-24 sm:pt-28 pb-10 gap-8 lg:gap-0">
-
-          {/* LEFT */}
-          <div className="flex flex-col justify-center w-full lg:w-1/2 xl:w-[54%]">
-            <p className={`f-barlow font-semibold text-[#FDFFE3]/58 uppercase mb-3 ts2 a-fadeUp ${mounted?"":"opacity-0"}`}
-               style={{ fontSize:12, letterSpacing:'0.44em' }}>
-              Limited Edition Drops
-            </p>
-
-            <h1 className="f-anton text-[#FDFFE3] leading-[0.88] select-none ts">
-              <span className={`block a-fadeUp d1 ${mounted?"":"opacity-0"}`} style={{ fontSize:'clamp(56px,10.5vw,144px)' }}>EXCLUSIVE</span>
-              <span className={`block a-fadeUp d2 ${mounted?"":"opacity-0"}`}
-                    style={{ fontSize:'clamp(56px,10.5vw,144px)', WebkitTextStroke:'2px #FDFFE3', color:'transparent' }}>JERSEYS</span>
-              <span className={`block a-fadeUp d3 ${mounted?"":"opacity-0"}`} style={{ fontSize:'clamp(56px,10.5vw,144px)' }}>FOR YOU</span>
-            </h1>
-
-            <p className={`f-bentham text-[#FDFFE3]/70 leading-relaxed max-w-sm mt-5 ts2 a-fadeUp d4 ${mounted?"":"opacity-0"}`}
-               style={{ fontSize:'clamp(14px,1.35vw,18px)' }}>
-              Premium quality jerseys inspired by your favourite teams.
-              Style, comfort, and performance in one.
-            </p>
-
-            <div className={`flex flex-wrap items-center gap-4 mt-7 a-fadeUp d5 ${mounted?"":"opacity-0"}`}>
-              <Link href="/category/top_pick"
-                className="btn-shop flex items-center gap-3 bg-[#FDFFE3] text-[#00612E] f-bentham px-6 py-3.5 rounded-[50px] ds"
-                style={{ fontSize:'clamp(15px,1.25vw,19px)' }}>
-                <span>Shop Now</span>
-                <span className="flex items-center justify-center bg-black rounded-full shrink-0" style={{ width:34,height:34 }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                    <path d="M5 12h14M13 6l6 6-6 6" stroke="#FDFFE3" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+              <h1 className="leading-[0.88]">
+                <span className={`block text-[clamp(3rem,11vw,7.5rem)] font-black tracking-tight premium-text ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+                  EXCLUSIVE
                 </span>
-              </Link>
-              <Link href="/reviews" className="f-barlow font-semibold text-[#FDFFE3]/48 hover:text-[#FDFFE3] transition-colors ts2 hidden sm:block"
-                    style={{ fontSize:11, letterSpacing:'0.32em' }}>
-                SEE REVIEWS →
-              </Link>
+                <span
+                  className={`block text-[clamp(3rem,10vw,7rem)] font-black tracking-tight ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}
+                  style={{ WebkitTextStroke: '2px #FDFFE3', color: 'transparent' }}
+                >
+                  JERSEYS
+                </span>
+                <span className={`block text-[clamp(3rem,10vw,7rem)] font-black tracking-tight premium-text ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+                  FOR YOU
+                </span>
+              </h1>
+
+              <p className={`mt-5 max-w-xl text-sm leading-7 text-[#FDFFE3]/78 sm:text-base lg:text-lg premium-soft ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+                Premium quality jerseys inspired by your favourite teams. Clean design, smooth motion, and a responsive feel on every screen.
+              </p>
+
+              <div className={`mt-7 flex flex-col gap-4 sm:flex-row sm:items-center ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+                <Link
+                  href="/category/top_pick"
+                  className="btn-shop inline-flex items-center justify-center gap-3 rounded-full bg-[#FDFFE3] px-6 py-4 text-base font-semibold text-[#00612E] sm:px-7"
+                >
+                  <span>Shop Now</span>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 12h14M13 6l6 6-6 6" stroke="#FDFFE3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                </Link>
+
+                <Link
+                  href="/reviews"
+                  className="text-sm uppercase tracking-[3px] text-[#FDFFE3]/55 transition hover:text-[#FDFFE3]"
+                >
+                  See Reviews →
+                </Link>
+              </div>
+
+              <div className={`mt-9 grid grid-cols-3 gap-4 sm:gap-8 ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+                {[
+                  { val: '200+', label: 'Styles' },
+                  { val: '50+', label: 'Teams' },
+                  { val: '4.9★', label: 'Rating' },
+                ].map(s => (
+                  <div key={s.label}>
+                    <div className="text-2xl font-black sm:text-3xl premium-text">{s.val}</div>
+                    <div className="mt-1 text-[10px] uppercase tracking-[3px] text-[#FDFFE3]/55">{s.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className={`flex items-center gap-8 mt-8 a-fadeUp d7 ${mounted?"":"opacity-0"}`}>
-              {[{val:"200+",label:"Styles"},{val:"50+",label:"Teams"},{val:"4.9★",label:"Rating"}].map(s => (
-                <div key={s.label} className="flex flex-col">
-                  <span className="f-anton text-[#FDFFE3] ts" style={{ fontSize:'clamp(20px,2.3vw,30px)' }}>{s.val}</span>
-                  <span className="f-barlow text-[#FDFFE3]/45 uppercase mt-0.5 ts2" style={{ fontSize:10, letterSpacing:'0.28em' }}>{s.label}</span>
+            {/* right */}
+            <div className={`relative flex justify-center lg:justify-end ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+              <div className="relative w-full max-w-[400px] sm:max-w-[520px] lg:max-w-[620px]">
+                <div
+                  className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[radial-gradient(circle,rgba(245,247,0,0.10),transparent_65%)] blur-2xl"
+                />
+                <div className="animate-float">
+                  <Image
+                    src="/pic1.jpg"
+                    alt="Jersey Model"
+                    width={900}
+                    height={1200}
+                    priority
+                    className="h-auto w-full select-none object-contain drop-shadow-[0_20px_60px_rgba(0,0,0,0.48)]"
+                    sizes="(max-width: 1024px) 90vw, 40vw"
+                  />
+                </div>
+
+                <div className="absolute left-2 top-8 rounded-2xl bg-[#FDFFE3] px-4 py-2 text-[#00612E] shadow-xl sm:left-0">
+                  <p className="text-[10px] font-semibold uppercase tracking-[2px] text-[#00612E]/60">New Drop</p>
+                  <p className="text-lg font-black leading-tight">World Cup26</p>
+                </div>
+
+                <div className="absolute bottom-10 right-0 rounded-2xl border border-white/10 bg-black/75 px-4 py-3 text-[#FDFFE3] shadow-xl backdrop-blur-sm">
+                  <p className="text-[10px] uppercase tracking-[2px] text-[#FDFFE3]/55">Starting from</p>
+                  <p className="text-2xl font-black">$99.99</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ticker */}
+          <div className="mt-8 overflow-hidden border-t border-white/10 py-3">
+            <div className="flex w-max animate-marquee">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <div key={i} className="flex items-center">
+                  {[
+                    'EXCLUSIVE DROP',
+                    'LIMITED EDITION',
+                    'PREMIUM JERSEYS',
+                    'FREE SHIPPING',
+                    'NEW SEASON',
+                    'WORLD CUP 26',
+                    'RETRO CLASSICS',
+                  ].map((word, j) => (
+                    <span key={`${i}-${j}`} className="flex items-center">
+                      <span className="whitespace-nowrap px-5 text-[10px] uppercase tracking-[4px] text-[#FDFFE3]/45">
+                        {word}
+                      </span>
+                      <span className="text-[#FDFFE3]/20">✦</span>
+                    </span>
+                  ))}
                 </div>
               ))}
             </div>
           </div>
-
-          {/* RIGHT */}
-          <div className={`w-full lg:w-[44%] flex justify-center lg:justify-end items-end self-end a-slideR d3 ${mounted?"":"opacity-0"}`}>
-            <div className="relative a-float" style={{ width:'clamp(220px,36vw,520px)' }}>
-              <Image src="/pic1.jpg" alt="Jersey Model" width={700} height={950} priority
-                sizes="(max-width:768px) 78vw, 38vw"
-                style={{ width:'100%',height:'auto',maxHeight:'78svh',objectFit:'contain',objectPosition:'bottom center',
-                  filter:'drop-shadow(0 20px 52px rgba(0,0,0,0.5)) drop-shadow(0 4px 16px rgba(0,0,0,0.3))' }}/>
-
-              <div className={`absolute top-[10%] -left-3 sm:-left-6 bg-[#FDFFE3] text-[#00612E] rounded-2xl px-3.5 py-2 ds a-fadeIn d9 ${mounted?"":"opacity-0"}`}>
-                <p className="f-barlow font-semibold uppercase text-[#00612E]/52" style={{ fontSize:9,letterSpacing:'0.2em' }}>New Drop</p>
-                <p className="f-anton text-[#00612E] leading-tight" style={{ fontSize:16 }}>World Cup26</p>
-              </div>
-
-              <div className={`absolute bottom-[16%] -right-2 sm:-right-5 bg-black/80 backdrop-blur-sm border border-[#FDFFE3]/10 text-[#FDFFE3] rounded-2xl px-3.5 py-2.5 ds a-fadeIn d9 ${mounted?"":"opacity-0"}`}>
-                <p className="f-barlow uppercase text-[#FDFFE3]/45" style={{ fontSize:9,letterSpacing:'0.22em' }}>Starting from</p>
-                <p className="f-anton text-[#FDFFE3] ts" style={{ fontSize:22 }}>$99.99</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Ticker */}
-        <div className="relative z-10 w-full border-t border-[#FDFFE3]/10 py-3 overflow-hidden mt-auto">
-          <div className="a-ticker">
-            {Array.from({length:2}).map((_,i) => (
-              <span key={i} className="flex items-center">
-                {["EXCLUSIVE DROP","LIMITED EDITION","PREMIUM JERSEYS","FREE SHIPPING","NEW SEASON","WORLD CUP 26","RETRO CLASSICS"].map((w,j) => (
-                  <span key={`${i}-${j}`} className="flex items-center">
-                    <span className="f-barlow text-[#FDFFE3]/36 uppercase whitespace-nowrap px-6 ts2" style={{ fontSize:10,letterSpacing:'0.38em' }}>{w}</span>
-                    <span className="text-[#FDFFE3]/18" style={{ fontSize:10 }}>✦</span>
-                  </span>
-                ))}
-              </span>
-            ))}
-          </div>
         </div>
       </section>
     </>
-  );
+  )
 }
