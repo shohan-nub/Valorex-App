@@ -117,93 +117,115 @@ export default function HeroSection() {
         .font-bentham { font-family: 'Bentham', serif; }
 
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(22px); }
+          from { opacity: 0; transform: translateY(40px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes fadeIn {
           from { opacity: 0; }
           to   { opacity: 1; }
         }
-        @keyframes floatSlow {
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(60px) scale(0.96); }
+          to   { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes float {
           0%,100% { transform: translateY(0px); }
-          50%     { transform: translateY(-12px); }
+          50%     { transform: translateY(-14px); }
         }
         @keyframes marquee {
           from { transform: translateX(0); }
           to   { transform: translateX(-50%); }
         }
+        @keyframes grain {
+          0%,100% { transform: translate(0,0); }
+          10%     { transform: translate(-2%,-3%); }
+          20%     { transform: translate(3%,1%); }
+          30%     { transform: translate(-1%,3%); }
+          40%     { transform: translate(2%,-1%); }
+          50%     { transform: translate(-3%,2%); }
+          60%     { transform: translate(1%,-2%); }
+          70%     { transform: translate(-2%,3%); }
+          80%     { transform: translate(3%,-1%); }
+          90%     { transform: translate(-1%,2%); }
+        }
         @keyframes mobileSlide {
-          from { opacity: 0; transform: translateY(-10px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from { opacity:0; transform:translateY(-8px); }
+          to   { opacity:1; transform:translateY(0); }
         }
 
-        .animate-fadeUp { animation: fadeUp .78s cubic-bezier(.22,1,.36,1) both; }
-        .animate-fadeIn { animation: fadeIn .7s ease both; }
-        .animate-floatSlow { animation: floatSlow 6.5s ease-in-out infinite; }
-        .animate-marquee { animation: marquee 18s linear infinite; }
+        .animate-fadeUp       { animation: fadeUp 0.9s cubic-bezier(.22,1,.36,1) both; }
+        .animate-fadeIn       { animation: fadeIn 1s ease both; }
+        .animate-slideInRight { animation: slideInRight 1.1s cubic-bezier(.22,1,.36,1) both; }
+        .animate-float        { animation: float 6s ease-in-out infinite; }
+        .animate-marquee      { animation: marquee 18s linear infinite; }
 
-        .hero-nav-link {
-          position: relative;
-          transition: color .2s ease;
-        }
+        .hero-nav-link { position:relative; }
         .hero-nav-link::after {
-          content: '';
-          position: absolute;
-          left: 0;
-          bottom: -4px;
-          width: 0;
-          height: 1px;
-          background: #FDFFE3;
-          transition: width .25s ease;
+          content:'';
+          position:absolute;
+          bottom:-3px;
+          left:0;
+          width:0;
+          height:1px;
+          background:#FDFFE3;
+          transition: width 0.3s ease;
         }
-        .hero-nav-link:hover::after { width: 100%; }
+        .hero-nav-link:hover::after { width:100%; }
 
         .icon-circle {
-          width: 40px;
-          height: 40px;
-          border-radius: 9999px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: 1px solid rgba(253,255,227,0.16);
-          background: rgba(255,255,255,0.06);
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
-          transition: transform .2s ease, background .2s ease, border-color .2s ease;
+          width:40px;
+          height:40px;
+          border-radius:9999px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          border:1px solid rgba(253,255,227,0.22);
+          background:rgba(255,255,255,0.08);
+          backdrop-filter:blur(14px);
+          -webkit-backdrop-filter:blur(14px);
+          transition: transform .2s, border-color .2s, background .2s;
           will-change: transform;
         }
         .icon-circle:hover {
-          border-color: rgba(253,255,227,0.55);
-          background: rgba(255,255,255,0.12);
-          transform: translateY(-1px);
+          border-color: rgba(253,255,227,0.6);
+          background: rgba(253,255,227,0.12);
+          transform: scale(1.04);
         }
 
         .btn-shop {
-          position: relative;
-          overflow: hidden;
-          transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+          position:relative;
+          overflow:hidden;
+          transition: transform .25s, box-shadow .25s;
           will-change: transform;
         }
-        .btn-shop:hover {
-          transform: translateY(-1px) scale(1.01);
-          box-shadow: 0 14px 30px rgba(0,0,0,.18);
+        .btn-shop::before {
+          content:'';
+          position:absolute;
+          inset:0;
+          background:rgba(0,0,0,0.12);
+          transform:translateX(-100%);
+          transition:transform .35s ease;
         }
+        .btn-shop:hover::before { transform:translateX(0); }
+        .btn-shop:hover { transform: translateY(-1px) scale(1.02); box-shadow: 0 12px 32px rgba(0,97,49,0.30); }
 
         .grain-overlay {
-          position: absolute;
-          inset: -50%;
-          width: 200%;
-          height: 200%;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          opacity: .025;
-          pointer-events: none;
+          position:absolute;
+          inset:-50%;
+          width:200%;
+          height:200%;
+          background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          opacity:0.04;
+          pointer-events:none;
+          animation: grain 0.5s steps(1) infinite;
+          transform: translate3d(0,0,0);
         }
 
         .premium-text {
-          text-shadow: 0 2px 8px rgba(0,0,0,.42), 0 10px 28px rgba(0,0,0,.30);
+          text-shadow: 0 2px 8px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.28);
         }
-        .premium-soft {
-          text-shadow: 0 1px 4px rgba(0,0,0,.22);
+        .premium-text-soft {
+          text-shadow: 0 1px 4px rgba(0,0,0,0.25), 0 4px 14px rgba(0,0,0,0.18);
         }
       `}</style>
 
@@ -212,41 +234,45 @@ export default function HeroSection() {
       <section
         id="hero-section"
         ref={heroRef}
-        className="relative w-full min-h-[100svh] overflow-hidden bg-[#00612E] text-[#FDFFE3]"
+        className="relative w-full min-h-svh bg-[#00612E] overflow-hidden flex flex-col text-[#FDFFE3]"
       >
-        {/* Background */}
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 z-0">
           <Image
             src="/hero.png"
             alt=""
             fill
             sizes="100vw"
+            className="object-cover opacity-[0.13]"
             priority
             aria-hidden
-            className="object-cover opacity-[0.11]"
           />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(245,247,0,0.14),transparent_54%)]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/25" />
         </div>
 
-        {/* Mouse glow */}
         <div
-          className="pointer-events-none absolute z-[2] hidden lg:block"
-          style={{
-            width: '500px',
-            height: '500px',
-            borderRadius: '9999px',
-            background: 'radial-gradient(circle, rgba(245,247,0,0.11) 0%, transparent 68%)',
-            transform: `translate3d(calc(-50% + ${mousePos.x * 28}px), calc(-50% + ${mousePos.y * 28}px), 0)`,
-            left: '50%',
-            top: '52%',
-            willChange: 'transform',
-          }}
+          className="absolute inset-0 z-[1] pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 80% 80% at 48% 55%, rgba(245,247,0,0.16) 0%, transparent 70%)' }}
         />
-
+        <div
+          className="absolute inset-0 z-[1] pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 60% 100% at 70% 40%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.28) 100%)' }}
+        />
         <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden">
           <div className="grain-overlay" />
         </div>
+
+        <div
+          className="pointer-events-none absolute z-[2] hidden lg:block rounded-full"
+          style={{
+            width: '520px',
+            height: '520px',
+            background: 'radial-gradient(circle, rgba(245,247,0,0.08) 0%, transparent 70%)',
+            top: '50%',
+            left: '50%',
+            transform: `translate(calc(-50% + ${mousePos.x * 30}px), calc(-50% + ${mousePos.y * 30}px))`,
+            transition: 'transform 0.15s linear',
+            willChange: 'transform',
+          }}
+        />
 
         {/* NAV */}
         <nav className="absolute top-0 left-0 right-0 z-30">
@@ -257,13 +283,13 @@ export default function HeroSection() {
                 alt="Logo"
                 width={160}
                 height={60}
-                className="h-10 w-auto object-contain sm:h-12 brightness-0 invert sepia saturate-[3] hue-rotate-[55deg]"
+                className="h-10 sm:h-12 w-auto object-contain brightness-0 invert sepia saturate-[3] hue-rotate-[55deg] scale-125 origin-left"
                 priority
               />
             </div>
 
             <ul
-              className={`hidden md:flex items-center gap-8 text-[11px] font-medium tracking-[3px] uppercase text-[#FDFFE3]/72 ${
+              className={`hidden md:flex items-center gap-8 font-barlow text-[11px] tracking-[3px] uppercase text-[#FDFFE3]/70 premium-text-soft ${
                 mounted ? 'animate-fadeIn' : 'opacity-0'
               }`}
             >
@@ -305,47 +331,29 @@ export default function HeroSection() {
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() => setMenuOpen(v => !v)}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FDFFE3] text-sm font-bold text-[#00612E] transition hover:scale-105"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold bg-[#FDFFE3] text-[#00612E] premium-text transition hover:scale-105"
                   >
                     {avatarLetter}
                   </button>
 
                   {menuOpen && (
-                    <div className="absolute right-0 top-12 z-50 w-52 overflow-hidden rounded-2xl border border-white/10 bg-[#005A2A] shadow-2xl backdrop-blur-xl">
-                      <div className="border-b border-white/10 px-4 py-3">
-                        <p className="truncate text-xs font-semibold text-[#FDFFE3]">
-                          {user.user_metadata?.full_name || 'User'}
-                        </p>
-                        <p className="mt-0.5 truncate text-xs text-[#FDFFE3]/60">{user.email}</p>
+                    <div className="absolute right-0 top-12 rounded-2xl shadow-2xl py-1.5 w-52 z-50 border bg-[#00612E] border-[#FDFFE3]/15 backdrop-blur-xl">
+                      <div className="px-4 py-2.5 border-b border-[#FDFFE3]/10">
+                        <p className="text-xs font-semibold truncate text-[#FDFFE3]">{user.user_metadata?.full_name || 'User'}</p>
+                        <p className="text-xs truncate mt-0.5 text-[#FDFFE3]/60">{user.email}</p>
                       </div>
-
                       {isAdmin && (
-                        <Link
-                          href="/adminPanel"
-                          onClick={() => setMenuOpen(false)}
-                          className="block px-4 py-2.5 text-sm text-[#FDFFE3]/90 transition hover:bg-white/5"
-                        >
+                        <Link href="/adminPanel" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:opacity-70 text-[#FDFFE3] transition">
                           ⚙️ Admin Panel
                         </Link>
                       )}
-                      <Link
-                        href="/orders"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-4 py-2.5 text-sm text-[#FDFFE3]/90 transition hover:bg-white/5"
-                      >
+                      <Link href="/orders" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:opacity-70 text-[#FDFFE3]/85 transition">
                         📦 My Orders
                       </Link>
-                      <Link
-                        href="/reviews"
-                        onClick={() => setMenuOpen(false)}
-                        className="block px-4 py-2.5 text-sm text-[#FDFFE3]/90 transition hover:bg-white/5"
-                      >
+                      <Link href="/reviews" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:opacity-70 text-[#FDFFE3]/85 transition">
                         ⭐ Reviews
                       </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="block w-full px-4 py-2.5 text-left text-sm text-[#ffb3b3] transition hover:bg-white/5"
-                      >
+                      <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:opacity-70 text-[#ffb3b3] transition">
                         🚪 Logout
                       </button>
                     </div>
@@ -354,7 +362,7 @@ export default function HeroSection() {
               ) : (
                 <Link
                   href="/login"
-                  className="hidden h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-[#FDFFE3] transition hover:bg-white/15 sm:inline-flex"
+                  className="icon-circle"
                   aria-label="Login"
                   title="Login"
                 >
@@ -368,10 +376,10 @@ export default function HeroSection() {
 
               <button
                 onClick={() => setMobileOpen(v => !v)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 transition hover:bg-white/15 md:hidden"
+                className="flex md:hidden w-10 h-10 rounded-full items-center justify-center border border-[#FDFFE3]/22 hover:border-[#FDFFE3]/60 hover:bg-[#FDFFE3]/8 transition"
                 aria-label="Menu"
               >
-                <div className="flex w-5 flex-col gap-[5px]">
+                <div className="flex flex-col gap-[5px] w-5">
                   <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen ? 'translate-y-[7px] rotate-45' : ''}`} />
                   <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen ? 'opacity-0' : ''}`} />
                   <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen ? '-translate-y-[7px] -rotate-45' : ''}`} />
@@ -381,19 +389,19 @@ export default function HeroSection() {
           </div>
         </nav>
 
-        {/* Mobile menu */}
+        {/* MOBILE MENU */}
         {mobileOpen && (
           <div
-            className="absolute left-4 right-4 top-[72px] z-40 rounded-3xl border border-white/10 bg-[#00612E]/98 p-4 shadow-2xl md:hidden"
-            style={{ animation: 'mobileSlide .22s ease both' }}
+            className="absolute top-[72px] left-4 right-4 z-40 rounded-3xl border border-[#FDFFE3]/12 p-4 md:hidden"
+            style={{ background: 'rgba(0,97,46,0.97)', backdropFilter: 'blur(20px)', animation: 'mobileSlide 0.25s ease both' }}
           >
-            <ul className="space-y-1">
+            <ul className="space-y-1 mb-3">
               {NAV_LINKS.map(link => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
                     onClick={() => setMobileOpen(false)}
-                    className="block rounded-2xl px-4 py-3 text-sm tracking-[2px] uppercase text-[#FDFFE3]/80 transition hover:bg-white/5 hover:text-[#FDFFE3]"
+                    className="block rounded-2xl px-4 py-3 font-barlow text-sm tracking-[2px] uppercase text-[#FDFFE3]/75 hover:bg-[#FDFFE3]/8 hover:text-[#FDFFE3] transition"
                   >
                     {link.label}
                   </Link>
@@ -401,22 +409,18 @@ export default function HeroSection() {
               ))}
             </ul>
 
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => {
                   setMobileOpen(false)
                   setSearchOpen(true)
                 }}
-                className="rounded-2xl border border-white/10 px-4 py-3 text-sm text-[#FDFFE3]/85 transition hover:bg-white/5"
+                className="rounded-2xl border border-[#FDFFE3]/12 px-4 py-3 text-center font-barlow text-sm text-[#FDFFE3]/80 hover:bg-[#FDFFE3]/8 transition"
               >
                 🔍 Search
               </button>
 
-              <Link
-                href="/cart"
-                onClick={() => setMobileOpen(false)}
-                className="rounded-2xl border border-white/10 px-4 py-3 text-center text-sm text-[#FDFFE3]/85 transition hover:bg-white/5"
-              >
+              <Link href="/cart" onClick={() => setMobileOpen(false)} className="rounded-2xl border border-[#FDFFE3]/12 px-4 py-3 text-center font-barlow text-sm text-[#FDFFE3]/80 hover:bg-[#FDFFE3]/8 transition">
                 Cart {mounted && totalItems > 0 ? `(${totalItems})` : ''}
               </Link>
 
@@ -424,15 +428,12 @@ export default function HeroSection() {
                 <Link
                   href="/login"
                   onClick={() => setMobileOpen(false)}
-                  className="col-span-2 rounded-2xl bg-[#FDFFE3] px-4 py-3 text-center text-sm font-semibold text-[#00612E] transition hover:opacity-90"
+                  className="col-span-2 rounded-2xl bg-[#FDFFE3] px-4 py-3 text-center font-barlow text-sm font-semibold text-[#00612E] transition hover:opacity-90"
                 >
                   Login
                 </Link>
               ) : (
-                <button
-                  onClick={handleLogout}
-                  className="col-span-2 rounded-2xl border border-white/10 px-4 py-3 text-sm text-[#ffb3b3] transition hover:bg-white/5"
-                >
+                <button onClick={handleLogout} className="col-span-2 rounded-2xl border border-[#FDFFE3]/10 px-4 py-3 font-barlow text-sm text-[#ffb3b3] hover:bg-[#FDFFE3]/6 transition">
                   Logout
                 </button>
               )}
@@ -440,122 +441,118 @@ export default function HeroSection() {
           </div>
         )}
 
-        {/* Hero content */}
-        <div className="relative z-10 mx-auto flex min-h-[100svh] max-w-7xl flex-col justify-between px-4 pb-5 pt-24 sm:px-6 lg:px-8">
-          <div className="grid flex-1 items-center gap-10 lg:grid-cols-2 lg:gap-6">
-            {/* Left */}
-            <div className="max-w-2xl">
-              <p className={`mb-3 text-xs sm:text-sm uppercase tracking-[5px] text-[#FDFFE3]/65 ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+        {/* HERO */}
+        <section className="relative z-10 flex-1 flex items-center">
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between w-full px-6 sm:px-10 lg:px-16 pt-28 pb-16 gap-12 lg:gap-0">
+            {/* LEFT */}
+            <div className="flex flex-col justify-center w-full lg:w-1/2 xl:w-[55%]">
+              <p
+                className={`font-barlow text-[#FDFFE3]/60 tracking-[5px] uppercase text-sm sm:text-base mb-3 premium-text-soft ${
+                  mounted ? 'animate-fadeUp' : 'opacity-0'
+                }`}
+              >
                 Limited Edition Drops
               </p>
 
-              <h1 className="leading-[0.88]">
-                <span className={`block text-[clamp(3rem,11vw,7.5rem)] font-black tracking-tight font-anton premium-text ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+              <h1 className="font-anton text-[#FDFFE3] leading-[0.9] select-none premium-text">
+                <span className={`block text-[clamp(72px,13vw,160px)] ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
                   EXCLUSIVE
                 </span>
                 <span
-                  className={`block text-[clamp(3rem,10vw,7rem)] font-black tracking-tight font-anton ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}
-                  style={{ WebkitTextStroke: '2px #FDFFE3', color: 'transparent', textShadow: '0 2px 8px rgba(0,0,0,.35)' }}
+                  className={`block text-[clamp(72px,11vw,160px)] ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}
+                  style={{ WebkitTextStroke: '2px #FDFFE3', color: 'transparent' }}
                 >
                   JERSEYS
                 </span>
-                <span className={`block text-[clamp(3rem,10vw,7rem)] font-black tracking-tight font-anton premium-text ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+                <span className={`block text-[clamp(72px,11vw,160px)] ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
                   FOR YOU
                 </span>
               </h1>
 
-              <p className={`mt-5 max-w-xl text-sm leading-7 text-[#FDFFE3]/78 sm:text-base lg:text-lg font-bentham premium-soft ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+              <p
+                className={`font-bentham text-[#FDFFE3]/75 text-base sm:text-lg lg:text-xl leading-relaxed max-w-md mt-6 premium-text-soft ${
+                  mounted ? 'animate-fadeUp' : 'opacity-0'
+                }`}
+              >
                 Premium quality jerseys inspired by your favourite teams. Style, comfort, and performance in one.
               </p>
 
-              <div className={`mt-7 flex flex-col gap-4 sm:flex-row sm:items-center ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
-                <Link
-                  href="/category/top_pick"
-                  className="btn-shop inline-flex items-center justify-center gap-3 rounded-full bg-[#FDFFE3] px-6 py-4 text-base font-semibold text-[#00612E] shadow-lg sm:px-7 font-bentham"
-                >
+              <div className={`flex items-center gap-5 mt-8 ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+                <Link href="/category/top_pick" className="btn-shop flex items-center gap-3 bg-[#FDFFE3] text-[#00612E] font-bentham text-lg sm:text-xl px-7 py-4 rounded-[55px]">
                   <span>Shop Now</span>
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black">
+                  <span className="flex items-center justify-center bg-black rounded-full w-9 h-9 shrink-0">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                       <path d="M5 12h14M13 6l6 6-6 6" stroke="#FDFFE3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </span>
                 </Link>
 
-                <Link
-                  href="/reviews"
-                  className="text-sm uppercase tracking-[3px] text-[#FDFFE3]/55 transition hover:text-[#FDFFE3] font-barlow"
-                >
+                <Link href="/reviews" className="hidden sm:block font-barlow text-[#FDFFE3]/50 tracking-[3px] uppercase text-sm hover:text-[#FDFFE3] transition-colors duration-300 premium-text-soft">
                   See Reviews →
                 </Link>
               </div>
 
-              <div className={`mt-9 grid grid-cols-3 gap-4 sm:gap-8 ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
-                {[
-                  { val: '200+', label: 'Styles' },
-                  { val: '50+', label: 'Teams' },
-                  { val: '4.9★', label: 'Rating' },
-                ].map(s => (
-                  <div key={s.label}>
-                    <div className="text-2xl font-black sm:text-3xl font-anton premium-text">{s.val}</div>
-                    <div className="mt-1 text-[10px] uppercase tracking-[3px] text-[#FDFFE3]/55 font-barlow">{s.label}</div>
+              <div className={`flex items-center gap-8 mt-10 ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
+                {[{ val: '200+', label: 'Styles' }, { val: '50+', label: 'Teams' }, { val: '4.9★', label: 'Rating' }].map(s => (
+                  <div key={s.label} className="flex flex-col">
+                    <span className="font-anton text-[#FDFFE3] text-2xl sm:text-3xl premium-text">{s.val}</span>
+                    <span className="font-barlow text-[#FDFFE3]/50 text-xs tracking-[3px] uppercase mt-0.5 premium-text-soft">{s.label}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Right */}
-            <div className={`relative flex justify-center lg:justify-end ${mounted ? 'animate-fadeUp' : 'opacity-0'}`}>
-              <div className="relative w-full max-w-[400px] sm:max-w-[520px] lg:max-w-[620px]">
-                <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[radial-gradient(circle,rgba(245,247,0,0.10),transparent_65%)] blur-2xl" />
-                <div className="animate-floatSlow">
-                  <Image
-                    src="/pic1.jpg"
-                    alt="Jersey Model"
-                    width={900}
-                    height={1200}
-                    priority
-                    className="h-auto w-full select-none object-contain drop-shadow-[0_20px_60px_rgba(0,0,0,0.48)]"
-                    sizes="(max-width: 1024px) 90vw, 40vw"
-                  />
+            {/* RIGHT */}
+            <div className={`w-full lg:w-[42%] flex justify-center lg:justify-end items-center ${mounted ? 'animate-slideInRight' : 'opacity-0'}`}>
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full pointer-events-none hidden lg:block"
+                   style={{ width: '340px', height: '340px', background: 'radial-gradient(circle, rgba(245,247,0,0.12) 0%, transparent 70%)' }} />
+              <div className="relative animate-float" style={{ width: 'clamp(260px, 36vw, 560px)' }}>
+                <Image
+                  src="/pic1.jpg"
+                  alt="Jersey Model"
+                  width={760}
+                  height={1000}
+                  priority
+                  style={{
+                    width: 'clamp(420px, 40vw, 1300px)',
+                    height: 'auto',
+                    maxHeight: '80svh',
+                    display: 'block',
+                    objectFit: 'contain',
+                    objectPosition: 'center',
+                    filter: 'drop-shadow(0 20px 60px rgba(0,0,0,0.55)) drop-shadow(0 5px 20px rgba(0,0,0,0.35))',
+                  }}
+                />
+
+                <div className={`absolute top-[12%] -left-4 sm:-left-8 bg-[#FDFFE3] text-[#00612E] rounded-2xl px-4 py-2 shadow-xl ${mounted ? 'animate-fadeIn' : 'opacity-0'}`}>
+                  <p className="font-barlow font-semibold text-xs tracking-[2px] uppercase text-[#00612E]/60">New Drop</p>
+                  <p className="font-anton text-[#00612E] text-lg leading-tight">World Cup26</p>
                 </div>
 
-                <div className="absolute left-2 top-8 rounded-2xl bg-[#FDFFE3] px-4 py-2 text-[#00612E] shadow-xl sm:left-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-[2px] text-[#00612E]/60 font-barlow">New Drop</p>
-                  <p className="text-lg font-black leading-tight font-anton">World Cup26</p>
-                </div>
-
-                <div className="absolute bottom-10 right-0 rounded-2xl border border-white/10 bg-black/75 px-4 py-3 text-[#FDFFE3] shadow-xl backdrop-blur-sm">
-                  <p className="text-[10px] uppercase tracking-[2px] text-[#FDFFE3]/55 font-barlow">Starting from</p>
-                  <p className="text-2xl font-black font-anton premium-text">$99.99</p>
+                <div className={`absolute bottom-[18%] -right-2 sm:-right-6 bg-black/80 backdrop-blur-sm border border-[#FDFFE3]/10 text-[#FDFFE3] rounded-2xl px-4 py-3 ${mounted ? 'animate-fadeIn' : 'opacity-0'}`}>
+                  <p className="font-barlow text-xs tracking-[2px] uppercase text-[#FDFFE3]/50">Starting from</p>
+                  <p className="font-anton text-[#FDFFE3] text-2xl premium-text">$99.99</p>
                 </div>
               </div>
             </div>
           </div>
+        </section>
 
-          {/* Ticker */}
-          <div className="mt-8 overflow-hidden border-t border-white/10 py-3">
-            <div className="flex w-max animate-marquee">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <div key={i} className="flex items-center">
-                  {[
-                    'EXCLUSIVE DROP',
-                    'LIMITED EDITION',
-                    'PREMIUM JERSEYS',
-                    'FREE SHIPPING',
-                    'NEW SEASON',
-                    'WORLD CUP 26',
-                    'RETRO CLASSICS',
-                  ].map((word, j) => (
-                    <span key={`${i}-${j}`} className="flex items-center">
-                      <span className="whitespace-nowrap px-5 text-[10px] uppercase tracking-[4px] text-[#FDFFE3]/45 font-barlow">
-                        {word}
-                      </span>
-                      <span className="text-[#FDFFE3]/20">✦</span>
+        {/* Ticker */}
+        <div className="relative z-10 w-full border-t border-[#FDFFE3]/10 py-3 overflow-hidden mt-auto">
+          <div className="ticker-track animate-marquee">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <span key={i} className="flex items-center">
+                {['EXCLUSIVE DROP','LIMITED EDITION','PREMIUM JERSEYS','FREE SHIPPING','NEW SEASON','WORLD CUP 26','RETRO CLASSICS'].map((word, j) => (
+                  <span key={`${i}-${j}`} className="flex items-center">
+                    <span className="font-barlow text-[#FDFFE3]/40 text-xs tracking-[4px] uppercase whitespace-nowrap px-6 premium-text-soft">
+                      {word}
                     </span>
-                  ))}
-                </div>
-              ))}
-            </div>
+                    <span className="text-[#FDFFE3]/20 text-xs">✦</span>
+                  </span>
+                ))}
+              </span>
+            ))}
           </div>
         </div>
       </section>
