@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import Metadata from "next";
 import "./globals.css";
 import { CartProvider } from './Cartcontext'
 import Navbar from "./component/Navbar";
