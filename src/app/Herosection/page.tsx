@@ -268,7 +268,7 @@ export default function HeroSection() {
 
       {/* ══════ HERO ══════ */}
       <section id="hero-section" ref={heroRef}
-        className="relative w-full bg-[#00612E] overflow-hidden flex flex-col"
+        className="relative w-full bg-[#E5EEE4] overflow-hidden flex flex-col"
         style={{ minHeight:'100svh' }}>
 
         <div className="absolute inset-0 z-0">
