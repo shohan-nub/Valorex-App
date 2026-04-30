@@ -106,7 +106,7 @@ export default function ProductDetailPage() {
       const { data } = await supabase
         .from('products')
         .select('id, name, price, image_url, stock, category')
-        .eq('category', product.category)
+        .eq('category', product?.category)
         .eq('is_active', true)
         .neq('id', id)
         .limit(24)

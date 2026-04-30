@@ -9,6 +9,7 @@ export interface CartItem {
   image_url: string
   size: string
   quantity: number
+ stock?: number
 }
 
 interface CartContextType {

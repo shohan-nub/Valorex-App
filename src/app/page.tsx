@@ -218,7 +218,12 @@ export default async function HomePage() {
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-5">
                     {cat.products.map((product) => (
                       <div key={product.id} className="transition-transform duration-300 hover:-translate-y-1">
-                        <ProductCard product={product} />
+                        <ProductCard
+  product={{
+    ...product,
+    stock: product.stock ?? 0,
+  }}
+/>
                       </div>
                     ))}
                   </div>
