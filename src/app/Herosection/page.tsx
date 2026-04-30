@@ -8,20 +8,20 @@ import type { User } from "@supabase/supabase-js";
 
 import { useCart } from "../Cartcontext";
 import { createClient } from "../lib/supabase/client";
-import SearchModal from "../Searchmodal";// ← নতুন
+import SearchModal from "../SearchModal";
 
 export default function HeroSection() {
-  const router = useRouter();
+  const router  = useRouter();
   const supabase = createClient();
   const { totalItems } = useCart();
 
-  const [mounted, setMounted]     = useState(false);
-  const [mousePos, setMousePos]   = useState({ x: 0, y: 0 });
-  const [user, setUser]           = useState<User | null>(null);
-  const [isAdmin, setIsAdmin]     = useState(false);
-  const [menuOpen, setMenuOpen]   = useState(false);
+  const [mounted,    setMounted]    = useState(false);
+  const [mousePos,   setMousePos]   = useState({ x: 0, y: 0 });
+  const [user,       setUser]       = useState<User | null>(null);
+  const [isAdmin,    setIsAdmin]    = useState(false);
+  const [menuOpen,   setMenuOpen]   = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false); // ← নতুন
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const heroRef     = useRef<HTMLElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -29,377 +29,324 @@ export default function HeroSection() {
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const onMove = (e: MouseEvent) => {
       if (!heroRef.current) return;
-      const rect = heroRef.current.getBoundingClientRect();
-      setMousePos({
-        x: (e.clientX - rect.left) / rect.width - 0.5,
-        y: (e.clientY - rect.top) / rect.height - 0.5,
-      });
+      const r = heroRef.current.getBoundingClientRect();
+      setMousePos({ x: (e.clientX - r.left) / r.width - 0.5, y: (e.clientY - r.top) / r.height - 0.5 });
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", onMove);
+    return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
   useEffect(() => {
-    async function loadUser() {
+    async function load() {
       const { data } = await supabase.auth.getUser();
       const u = data.user ?? null;
-      setUser(u);
-      setIsAdmin(u?.app_metadata?.role === "admin");
+      setUser(u); setIsAdmin(u?.app_metadata?.role === "admin");
     }
-    loadUser();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      setIsAdmin(u?.app_metadata?.role === "admin");
+    load();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+      const u = s?.user ?? null; setUser(u); setIsAdmin(u?.app_metadata?.role === "admin");
     });
     return () => subscription.unsubscribe();
   }, [supabase]);
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
-        setMenuOpen(false);
+    const h = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, []);
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    setMenuOpen(false);
-    router.push("/");
-    router.refresh();
+    setMenuOpen(false); router.push("/"); router.refresh();
   }
 
-  const avatarLetter = (
-    user?.user_metadata?.full_name?.[0] || user?.email?.[0] || "U"
-  ).toUpperCase();
+  const avatarLetter = (user?.user_metadata?.full_name?.[0] || user?.email?.[0] || "U").toUpperCase();
 
   const NAV_LINKS = [
-    { label: "Reviews",  href: "/reviews"          },
-    { label: "Home",     href: "/"                  },
-    { label: "About",    href: "/about"             }, // TODO: /about page
-    { label: "Contact",  href: "/contact"           }, // TODO: /contact page
+    { label: "Reviews", href: "/reviews"  },
+    { label: "Home",    href: "/"         },
+    { label: "About",   href: "/about"    },
+    { label: "Contact", href: "/contact"  },
   ];
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Anton+SC&family=Barlow+Condensed:wght@300;400;600&family=Bentham&display=swap');
-        .font-anton   { font-family: 'Anton SC', sans-serif; }
-        .font-barlow  { font-family: 'Barlow Condensed', sans-serif; }
-        .font-bentham { font-family: 'Bentham', serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Anton+SC&family=Barlow+Condensed:wght@400;500;600;700&family=Bentham&display=swap');
+        .f-anton   { font-family:'Anton SC',sans-serif; }
+        .f-barlow  { font-family:'Barlow Condensed',sans-serif; }
+        .f-bentham { font-family:'Bentham',serif; }
 
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(40px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideInRight {
-          from { opacity: 0; transform: translateX(60px) scale(0.96); }
-          to   { opacity: 1; transform: translateX(0) scale(1); }
-        }
-        @keyframes float {
-          0%,100% { transform: translateY(0px) rotate(-0.08deg); }
-          50%     { transform: translateY(-18px) rotate(0.08deg); }
-        }
-        @keyframes marquee {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-        @keyframes grain {
-          0%,100% { transform: translate(0,0); }
-          10%     { transform: translate(-2%,-3%); }
-          20%     { transform: translate(3%,1%); }
-          30%     { transform: translate(-1%,3%); }
-          40%     { transform: translate(2%,-1%); }
-          50%     { transform: translate(-3%,2%); }
-          60%     { transform: translate(1%,-2%); }
-          70%     { transform: translate(-2%,3%); }
-          80%     { transform: translate(3%,-1%); }
-          90%     { transform: translate(-1%,2%); }
-        }
-        @keyframes mobileSlide {
-          from { opacity:0; transform:translateY(-8px); }
-          to   { opacity:1; transform:translateY(0); }
+        @keyframes fadeUp    { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn    { from{opacity:0} to{opacity:1} }
+        @keyframes slideR    { from{opacity:0;transform:translateX(48px) scale(.97)} to{opacity:1;transform:translateX(0) scale(1)} }
+        @keyframes floatY    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-13px)} }
+        @keyframes ticker    { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+        @keyframes grain     { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-2%,-2%)} 50%{transform:translate(2%,1%)} 75%{transform:translate(-1%,2%)} }
+        @keyframes dropIn    { from{opacity:0;transform:translateY(-8px) scale(.97)} to{opacity:1;transform:translateY(0) scale(1)} }
+
+        .a-fadeUp  { animation:fadeUp  .85s cubic-bezier(.22,1,.36,1) both }
+        .a-fadeIn  { animation:fadeIn  .9s ease both }
+        .a-slideR  { animation:slideR  1.1s cubic-bezier(.22,1,.36,1) both }
+        .a-float   { animation:floatY  6s ease-in-out infinite }
+        .a-ticker  { animation:ticker  22s linear infinite; display:flex; width:max-content }
+        .a-dropIn  { animation:dropIn  .22s ease both }
+
+        .d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
+        .d4{animation-delay:.4s}.d5{animation-delay:.5s}.d7{animation-delay:.7s}.d9{animation-delay:.9s}
+
+        .grain-layer {
+          position:absolute;inset:-50%;width:200%;height:200%;pointer-events:none;opacity:.035;
+          background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          animation:grain .5s steps(1) infinite;
         }
 
-        .animate-fadeUp       { animation: fadeUp 0.9s cubic-bezier(.22,1,.36,1) both; }
-        .animate-fadeIn       { animation: fadeIn 1s ease both; }
-        .animate-slideInRight { animation: slideInRight 1.1s cubic-bezier(.22,1,.36,1) both; }
-        .animate-float        { animation: float 6s ease-in-out infinite; }
-        .animate-marquee      { animation: marquee 18s linear infinite; }
-
-        .delay-100 { animation-delay: 0.1s; }
-        .delay-200 { animation-delay: 0.2s; }
-        .delay-300 { animation-delay: 0.3s; }
-        .delay-400 { animation-delay: 0.4s; }
-        .delay-500 { animation-delay: 0.5s; }
-        .delay-700 { animation-delay: 0.7s; }
-        .delay-900 { animation-delay: 0.9s; }
-
-        .btn-shop {
-          position: relative; overflow: hidden;
-          transition: transform 0.25s, box-shadow 0.25s;
+        /* icon circle button */
+        .ic {
+          width:42px;height:42px;border-radius:9999px;
+          display:flex;align-items:center;justify-content:center;flex-shrink:0;
+          border:1.5px solid rgba(253,255,227,.22);color:#FDFFE3;
+          transition:border-color .2s,background .2s,transform .18s;
         }
-        .btn-shop::before {
-          content:''; position:absolute; inset:0;
-          background: rgba(0,0,0,0.12);
-          transform: translateX(-100%);
-          transition: transform 0.35s ease;
-        }
-        .btn-shop:hover::before { transform: translateX(0); }
-        .btn-shop:hover { transform: scale(1.04); box-shadow: 0 8px 32px rgba(0,97,49,0.35); }
+        .ic:hover{border-color:rgba(253,255,227,.6);background:rgba(253,255,227,.09);transform:translateY(-1px)}
 
-        .grain-overlay {
-          position:absolute; inset:-50%; width:200%; height:200%;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          opacity:0.04; pointer-events:none;
-          animation: grain 0.5s steps(1) infinite;
-        }
-        .ticker-track { display:flex; width:max-content; }
+        /* underline nav link */
+        .nl{position:relative}
+        .nl::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1.5px;background:#FDFFE3;transition:width .26s ease}
+        .nl:hover::after{width:100%}
 
-        .hero-nav-link { position:relative; }
-        .hero-nav-link::after {
-          content:''; position:absolute; bottom:-3px; left:0;
-          width:0; height:1px; background:#FDFFE3;
-          transition: width 0.3s ease;
-        }
-        .hero-nav-link:hover::after { width:100%; }
+        /* shop CTA */
+        .btn-shop{position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}
+        .btn-shop::before{content:'';position:absolute;inset:0;background:rgba(0,0,0,.1);transform:translateX(-100%);transition:transform .3s ease}
+        .btn-shop:hover::before{transform:translateX(0)}
+        .btn-shop:hover{transform:scale(1.03);box-shadow:0 8px 26px rgba(0,97,49,.36)}
 
-        .icon-circle {
-          width:40px; height:40px; border-radius:9999px;
-          display:flex; align-items:center; justify-content:center;
-          border: 1px solid rgba(253,255,227,0.22);
-          transition: border-color 0.25s, background 0.25s;
-        }
-        .icon-circle:hover {
-          border-color: rgba(253,255,227,0.6);
-          background: rgba(253,255,227,0.08);
-        }
-
-        .premium-text { text-shadow: 0 2px 8px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.28); }
-        .premium-text-soft { text-shadow: 0 1px 4px rgba(0,0,0,0.28), 0 4px 14px rgba(0,0,0,0.18); }
-        .premium-drop { filter: drop-shadow(0 14px 36px rgba(0,0,0,0.35)) drop-shadow(0 4px 14px rgba(0,0,0,0.22)); }
+        /* shadow helpers */
+        .ts {text-shadow:0 2px 10px rgba(0,0,0,.36),0 6px 20px rgba(0,0,0,.24)}
+        .ts2{text-shadow:0 1px 5px rgba(0,0,0,.26),0 3px 11px rgba(0,0,0,.16)}
+        .ds {filter:drop-shadow(0 10px 28px rgba(0,0,0,.3)) drop-shadow(0 3px 10px rgba(0,0,0,.2))}
+        .ds2{filter:drop-shadow(0 18px 48px rgba(0,0,0,.48)) drop-shadow(0 4px 15px rgba(0,0,0,.3))}
       `}</style>
 
-      {/* Search modal */}
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
-      {/* ══ NAV ══ */}
-      <nav className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-6 sm:px-10 lg:px-16 py-5">
+      {/* ══════ NAVBAR ══════ */}
+      <nav className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-5 sm:px-10 lg:px-16 py-5">
 
-        {/* LOGO */}
-        <div className={`animate-fadeIn ${mounted ? "" : "opacity-0"}`}>
-          <Image
-            src="/logo.png"
-            alt="Logo"
-            width={160}
-            height={60}
-            className="h-12 sm:h-14 w-auto object-contain brightness-0 invert sepia saturate-[3] hue-rotate-[55deg] scale-125 origin-left premium-drop"
-            priority
-          />
+        {/* Logo */}
+        <div className={`a-fadeIn shrink-0 ${mounted?"":"opacity-0"}`}>
+          <Image src="/logo.png" alt="Logo" width={140} height={56}
+            className="h-10 sm:h-12 w-auto object-contain brightness-0 invert sepia saturate-[3] hue-rotate-[55deg] scale-110 origin-left ds"
+            priority />
         </div>
 
-        {/* DESKTOP LINKS */}
-        <ul className={`hidden md:flex items-center gap-8 font-barlow text-[11px] tracking-[3px] uppercase text-[#FDFFE3]/70 animate-fadeIn delay-200 premium-text-soft ${mounted ? "" : "opacity-0"}`}>
-          {NAV_LINKS.map(link => (
-            <li key={link.label}>
-              <Link href={link.href} className="hero-nav-link hover:text-[#FDFFE3] transition-colors duration-200">
-                {link.label}
-              </Link>
+        {/* Desktop links — 13px, spaced out */}
+        <ul className={`hidden md:flex items-center gap-10 f-barlow font-semibold uppercase text-[#FDFFE3]/80 ts2 a-fadeIn d2 ${mounted?"":"opacity-0"}`}
+            style={{ fontSize: 13, letterSpacing: '0.24em' }}>
+          {NAV_LINKS.map(l => (
+            <li key={l.label}>
+              <Link href={l.href} className="nl hover:text-[#FDFFE3] transition-colors duration-200">{l.label}</Link>
             </li>
           ))}
         </ul>
 
-        {/* RIGHT ICONS */}
-        <div className={`flex items-center gap-2 sm:gap-3 animate-fadeIn delay-300 ${mounted ? "" : "opacity-0"}`}>
+        {/* Right icons */}
+        <div className={`flex items-center gap-2 a-fadeIn d3 ${mounted?"":"opacity-0"}`}>
 
-          {/* Search */}
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="icon-circle"
-            aria-label="Search"
-          >
-            <svg width="17" height="17" fill="none" stroke="#FDFFE3" strokeWidth="1.7" viewBox="0 0 24 24">
-              <circle cx="11" cy="11" r="7"/>
-              <path d="M21 21l-4.35-4.35" strokeLinecap="round"/>
+          <button onClick={() => setSearchOpen(true)} className="ic ds" aria-label="Search">
+            <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" strokeLinecap="round"/>
             </svg>
           </button>
 
-          {/* Cart */}
-          <Link href="/cart" className="icon-circle relative" aria-label="Cart">
-            <svg width="17" height="17" fill="none" stroke="#FDFFE3" strokeWidth="1.7" viewBox="0 0 24 24">
+          <Link href="/cart" className="ic ds relative" aria-label="Cart">
+            <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
               <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
               <line x1="3" y1="6" x2="21" y2="6"/>
               <path d="M16 10a4 4 0 01-8 0"/>
             </svg>
             {mounted && totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-[#FDFFE3] text-[#00612E] text-[10px] flex items-center justify-center font-bold">
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#FDFFE3] text-[#00612E] text-[10px] flex items-center justify-center font-bold">
                 {totalItems > 9 ? "9+" : totalItems}
               </span>
             )}
           </Link>
 
-          {/* Avatar / Login */}
-          {user ? (
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setMenuOpen(v => !v)}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold bg-[#FDFFE3] text-[#00612E] premium-drop transition hover:scale-105"
-              >
-                {avatarLetter}
-              </button>
-
-              {menuOpen && (
-                <div className="absolute right-0 top-12 rounded-2xl shadow-2xl py-1.5 w-52 z-50 border bg-[#00612E] border-[#FDFFE3]/15 premium-drop">
-                  <div className="px-4 py-2.5 border-b border-[#FDFFE3]/10">
-                    <p className="text-xs font-semibold truncate text-[#FDFFE3]">{user.user_metadata?.full_name || "User"}</p>
-                    <p className="text-xs truncate mt-0.5 text-[#FDFFE3]/60">{user.email}</p>
+          {/* Avatar — only render after mount to avoid hydration mismatch causing corner artifact */}
+          {mounted && (
+            user ? (
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setMenuOpen(v => !v)}
+                  className="w-[42px] h-[42px] rounded-full flex items-center justify-center text-sm font-bold bg-[#FDFFE3] text-[#00612E] ds transition hover:scale-105 shrink-0"
+                >
+                  {avatarLetter}
+                </button>
+                {menuOpen && (
+                  <div className="a-dropIn absolute right-0 top-[52px] w-56 rounded-2xl overflow-hidden shadow-2xl border border-[#FDFFE3]/12 z-50"
+                       style={{ background:'rgba(0,80,38,0.97)', backdropFilter:'blur(20px)' }}>
+                    <div className="px-4 py-3 border-b border-[#FDFFE3]/10">
+                      <p className="text-sm font-semibold text-[#FDFFE3] truncate">{user.user_metadata?.full_name || "User"}</p>
+                      <p className="text-xs text-[#FDFFE3]/50 truncate mt-0.5">{user.email}</p>
+                    </div>
+                    {isAdmin && <Link href="/adminPanel" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[#FDFFE3] hover:bg-[#FDFFE3]/8 transition">⚙️ Admin Panel</Link>}
+                    <Link href="/orders"  onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[#FDFFE3]/82 hover:bg-[#FDFFE3]/8 transition">📦 My Orders</Link>
+                    <Link href="/reviews" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[#FDFFE3]/82 hover:bg-[#FDFFE3]/8 transition">⭐ Reviews</Link>
+                    <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[#ffb3b3] hover:bg-[#FDFFE3]/8 transition">🚪 Logout</button>
                   </div>
-                  {isAdmin && (
-                    <Link href="/adminPanel" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:opacity-70 text-[#FDFFE3] transition">
-                      ⚙️ Admin Panel
-                    </Link>
-                  )}
-                  <Link href="/orders" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:opacity-70 text-[#FDFFE3]/85 transition">
-                    📦 My Orders
-                  </Link>
-                  <Link href="/reviews" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:opacity-70 text-[#FDFFE3]/85 transition">
-                    ⭐ Reviews
-                  </Link>
-                  <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:opacity-70 text-[#ffb3b3] transition">
-                    🚪 Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <Link href="/login" className="icon-circle px-4 font-barlow text-[11px] font-semibold uppercase tracking-[3px] text-[#FDFFE3]/90 w-auto">
-              Login
-            </Link>
+                )}
+              </div>
+            ) : (
+              <Link href="/login" className="ic f-barlow font-semibold uppercase text-[#FDFFE3]/88 ds"
+                    style={{ width:'auto', paddingInline:16, fontSize:11, letterSpacing:'0.22em' }}>
+                Login
+              </Link>
+            )
           )}
 
           {/* Hamburger */}
-         {/* Hamburger */}
-<button
-  onClick={() => setMobileOpen(v => !v)}
-  className="flex md:hidden w-10 h-10 rounded-full items-center justify-center border border-[#FDFFE3]/22 hover:border-[#FDFFE3]/60 hover:bg-[#FDFFE3]/8 transition"
-  aria-label="Menu"
->
-  <div className="flex flex-col gap-[5px] w-5">
-    <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen ? "translate-y-[7px] rotate-45" : ""}`}/>
-    <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen ? "opacity-0" : ""}`}/>
-    <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen ? "-translate-y-[7px] -rotate-45" : ""}`}/>
-  </div>
-</button>
+          <button onClick={() => setMobileOpen(v => !v)} className="ic md:hidden" aria-label="Menu">
+            <div className="flex flex-col gap-[5px] w-5">
+              <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen?"translate-y-[7px] rotate-45":""}`}/>
+              <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen?"opacity-0":""}`}/>
+              <span className={`block h-[1.5px] rounded bg-[#FDFFE3] transition-all duration-300 ${mobileOpen?"-translate-y-[7px] -rotate-45":""}`}/>
+            </div>
+          </button>
         </div>
       </nav>
 
-      {/* MOBILE MENU DROPDOWN */}
+      {/* MOBILE MENU */}
       {mobileOpen && (
-        <div
-          className="absolute top-[72px] left-4 right-4 z-40 rounded-3xl border border-[#FDFFE3]/12 p-4 md:hidden"
-          style={{ background: "rgba(0,97,46,0.97)", backdropFilter: "blur(20px)", animation: "mobileSlide 0.25s ease both" }}
-        >
+        <div className="a-dropIn absolute top-[72px] left-3 right-3 z-40 rounded-3xl border border-[#FDFFE3]/12 p-4 md:hidden"
+             style={{ background:'rgba(0,80,38,0.97)', backdropFilter:'blur(22px)' }}>
           <ul className="space-y-1 mb-3">
-            {NAV_LINKS.map(link => (
-              <li key={link.label}>
-                <Link
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="block rounded-2xl px-4 py-3 font-barlow text-sm tracking-[2px] uppercase text-[#FDFFE3]/75 hover:bg-[#FDFFE3]/8 hover:text-[#FDFFE3] transition"
-                >
-                  {link.label}
+            {NAV_LINKS.map(l => (
+              <li key={l.label}>
+                <Link href={l.href} onClick={() => setMobileOpen(false)}
+                  className="block rounded-xl px-4 py-3 f-barlow font-semibold uppercase text-[#FDFFE3]/75 hover:bg-[#FDFFE3]/8 hover:text-[#FDFFE3] transition"
+                  style={{ fontSize:13, letterSpacing:'0.2em' }}>
+                  {l.label}
                 </Link>
               </li>
             ))}
           </ul>
           <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => { setMobileOpen(false); setSearchOpen(true); }}
-              className="rounded-2xl border border-[#FDFFE3]/12 px-4 py-3 text-center font-barlow text-sm text-[#FDFFE3]/80 hover:bg-[#FDFFE3]/8 transition"
-            >
+            <button onClick={() => { setMobileOpen(false); setSearchOpen(true); }}
+              className="rounded-xl border border-[#FDFFE3]/12 py-3 text-center f-barlow text-sm text-[#FDFFE3]/78 hover:bg-[#FDFFE3]/8 transition">
               🔍 Search
             </button>
-            <Link href="/cart" onClick={() => setMobileOpen(false)} className="rounded-2xl border border-[#FDFFE3]/12 px-4 py-3 text-center font-barlow text-sm text-[#FDFFE3]/80 hover:bg-[#FDFFE3]/8 transition">
-              Cart {mounted && totalItems > 0 ? `(${totalItems})` : ""}
+            <Link href="/cart" onClick={() => setMobileOpen(false)}
+              className="rounded-xl border border-[#FDFFE3]/12 py-3 text-center f-barlow text-sm text-[#FDFFE3]/78 hover:bg-[#FDFFE3]/8 transition">
+              🛒 Cart {mounted && totalItems > 0 ? `(${totalItems})` : ""}
             </Link>
             {!user ? (
-              <Link href="/login" onClick={() => setMobileOpen(false)} className="col-span-2 rounded-2xl bg-[#FDFFE3] px-4 py-3 text-center font-barlow text-sm font-semibold text-[#00612E] transition hover:opacity-90">
+              <Link href="/login" onClick={() => setMobileOpen(false)}
+                className="col-span-2 rounded-xl bg-[#FDFFE3] py-3 text-center f-barlow text-sm font-semibold text-[#00612E] hover:opacity-90 transition">
                 Login
               </Link>
             ) : (
-              <button onClick={handleLogout} className="col-span-2 rounded-2xl border border-[#FDFFE3]/10 px-4 py-3 font-barlow text-sm text-[#ffb3b3] hover:bg-[#FDFFE3]/6 transition">
-                Logout
-              </button>
+              <>
+                {isAdmin && (
+                  <Link href="/adminPanel" onClick={() => setMobileOpen(false)}
+                    className="col-span-2 rounded-xl border border-[#FDFFE3]/10 py-3 text-center f-barlow text-sm text-[#FDFFE3]/78 hover:bg-[#FDFFE3]/8 transition">
+                    ⚙️ Admin Panel
+                  </Link>
+                )}
+                <button onClick={handleLogout}
+                  className="col-span-2 rounded-xl border border-[#FDFFE3]/10 py-3 f-barlow text-sm text-[#ffb3b3] hover:bg-[#FDFFE3]/8 transition">
+                  Logout
+                </button>
+              </>
             )}
           </div>
         </div>
       )}
 
-      {/* ══ HERO SECTION ══ */}
-      <section
-        id="hero-section"
-        ref={heroRef}
-        className="relative w-full min-h-svh bg-[#00612E] overflow-hidden flex flex-col"
-      >
-        <div className="absolute inset-0 z-0">
-          <Image src="/hero.png" alt="" fill sizes="100vw" className="object-cover opacity-[0.13]" priority aria-hidden />
-        </div>
-        <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 80% at 48% 55%, rgba(245,247,0,0.16) 0%, transparent 70%)" }}/>
-        <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background: "radial-gradient(ellipse 60% 100% at 70% 40%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.28) 100%)" }}/>
-        <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden"><div className="grain-overlay"/></div>
-        <div className="absolute top-0 right-[38%] w-[1px] h-full z-[3] pointer-events-none hidden lg:block" style={{ background: "linear-gradient(to bottom, transparent, rgba(253,255,227,0.08) 30%, rgba(253,255,227,0.08) 70%, transparent)" }}/>
-        <div className="absolute z-[2] pointer-events-none rounded-full hidden lg:block" style={{ width:"520px", height:"520px", background:"radial-gradient(circle, rgba(245,247,0,0.08) 0%, transparent 70%)", top:"50%", left:"50%", transform:`translate(calc(-50% + ${mousePos.x * 30}px), calc(-50% + ${mousePos.y * 30}px))`, transition:"transform 0.6s ease" }}/>
+      {/* ══════ HERO ══════ */}
+      <section id="hero-section" ref={heroRef}
+        className="relative w-full bg-[#00612E] overflow-hidden flex flex-col"
+        style={{ minHeight:'100svh' }}>
 
-        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between flex-1 pt-28 pb-16 px-6 sm:px-10 lg:px-16 gap-12 lg:gap-0">
+        <div className="absolute inset-0 z-0">
+          <Image src="/hero.png" alt="" fill sizes="100vw" className="object-cover opacity-[0.12]" priority aria-hidden/>
+        </div>
+        <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background:"radial-gradient(ellipse 80% 80% at 45% 55%, rgba(245,247,0,0.13) 0%, transparent 70%)" }}/>
+        <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background:"radial-gradient(ellipse 55% 100% at 72% 40%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.24) 100%)" }}/>
+        <div className="absolute inset-0 z-[2] pointer-events-none overflow-hidden"><div className="grain-layer"/></div>
+        <div className="absolute z-[2] pointer-events-none rounded-full hidden lg:block"
+          style={{ width:"460px",height:"460px",background:"radial-gradient(circle,rgba(245,247,0,0.07) 0%,transparent 70%)",top:"50%",left:"48%",
+            transform:`translate(calc(-50% + ${mousePos.x*26}px),calc(-50% + ${mousePos.y*26}px))`,transition:"transform .55s ease" }}/>
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between flex-1 px-5 sm:px-10 lg:px-16 pt-24 sm:pt-28 pb-10 gap-8 lg:gap-0">
+
           {/* LEFT */}
-          <div className="flex flex-col justify-center w-full lg:w-1/2 xl:w-[55%]">
-            <p className={`font-barlow text-[#FDFFE3]/60 tracking-[5px] uppercase text-sm sm:text-base mb-3 animate-fadeUp premium-text-soft ${mounted ? "" : "opacity-0"}`}>Limited Edition Drops</p>
-            <h1 className="font-anton text-[#FDFFE3] leading-[0.9] select-none premium-text">
-              <span className={`block text-[clamp(72px,13vw,160px)] animate-fadeUp delay-100 ${mounted ? "" : "opacity-0"}`}>EXCLUSIVE</span>
-              <span className={`block text-[clamp(72px,11vw,160px)] animate-fadeUp delay-200 ${mounted ? "" : "opacity-0"}`} style={{ WebkitTextStroke:"2px #FDFFE3", color:"transparent" }}>JERSEYS</span>
-              <span className={`block text-[clamp(72px,11vw,160px)] animate-fadeUp delay-300 ${mounted ? "" : "opacity-0"}`}>FOR YOU</span>
-            </h1>
-            <p className={`font-bentham text-[#FDFFE3]/75 text-base sm:text-lg lg:text-xl leading-relaxed max-w-md mt-6 animate-fadeUp delay-400 premium-text-soft ${mounted ? "" : "opacity-0"}`}>
-              Premium quality jerseys inspired by your favourite teams. Style, comfort, and performance in one.
+          <div className="flex flex-col justify-center w-full lg:w-1/2 xl:w-[54%]">
+            <p className={`f-barlow font-semibold text-[#FDFFE3]/58 uppercase mb-3 ts2 a-fadeUp ${mounted?"":"opacity-0"}`}
+               style={{ fontSize:12, letterSpacing:'0.44em' }}>
+              Limited Edition Drops
             </p>
-            <div className={`flex items-center gap-5 mt-8 animate-fadeUp delay-500 ${mounted ? "" : "opacity-0"}`}>
-              <Link href="/category/top_pick" className="btn-shop flex items-center gap-3 bg-[#FDFFE3] text-[#00612E] font-bentham text-lg sm:text-xl px-7 py-4 rounded-[55px] premium-drop">
+
+            <h1 className="f-anton text-[#FDFFE3] leading-[0.88] select-none ts">
+              <span className={`block a-fadeUp d1 ${mounted?"":"opacity-0"}`} style={{ fontSize:'clamp(56px,10.5vw,144px)' }}>EXCLUSIVE</span>
+              <span className={`block a-fadeUp d2 ${mounted?"":"opacity-0"}`}
+                    style={{ fontSize:'clamp(56px,10.5vw,144px)', WebkitTextStroke:'2px #FDFFE3', color:'transparent' }}>JERSEYS</span>
+              <span className={`block a-fadeUp d3 ${mounted?"":"opacity-0"}`} style={{ fontSize:'clamp(56px,10.5vw,144px)' }}>FOR YOU</span>
+            </h1>
+
+            <p className={`f-bentham text-[#FDFFE3]/70 leading-relaxed max-w-sm mt-5 ts2 a-fadeUp d4 ${mounted?"":"opacity-0"}`}
+               style={{ fontSize:'clamp(14px,1.35vw,18px)' }}>
+              Premium quality jerseys inspired by your favourite teams.
+              Style, comfort, and performance in one.
+            </p>
+
+            <div className={`flex flex-wrap items-center gap-4 mt-7 a-fadeUp d5 ${mounted?"":"opacity-0"}`}>
+              <Link href="/category/top_pick"
+                className="btn-shop flex items-center gap-3 bg-[#FDFFE3] text-[#00612E] f-bentham px-6 py-3.5 rounded-[50px] ds"
+                style={{ fontSize:'clamp(15px,1.25vw,19px)' }}>
                 <span>Shop Now</span>
-                <span className="flex items-center justify-center bg-black rounded-full w-9 h-9 shrink-0">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#FDFFE3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <span className="flex items-center justify-center bg-black rounded-full shrink-0" style={{ width:34,height:34 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M5 12h14M13 6l6 6-6 6" stroke="#FDFFE3" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </span>
               </Link>
-              <Link href="/reviews" className="font-barlow text-[#FDFFE3]/50 tracking-[3px] uppercase text-sm hover:text-[#FDFFE3] transition-colors duration-300 hidden sm:block premium-text-soft">
-                See Reviews →
+              <Link href="/reviews" className="f-barlow font-semibold text-[#FDFFE3]/48 hover:text-[#FDFFE3] transition-colors ts2 hidden sm:block"
+                    style={{ fontSize:11, letterSpacing:'0.32em' }}>
+                SEE REVIEWS →
               </Link>
             </div>
-            <div className={`flex items-center gap-8 mt-10 animate-fadeUp delay-700 ${mounted ? "" : "opacity-0"}`}>
-              {[{ val:"200+", label:"Styles" }, { val:"50+", label:"Teams" }, { val:"4.9★", label:"Rating" }].map(s => (
+
+            <div className={`flex items-center gap-8 mt-8 a-fadeUp d7 ${mounted?"":"opacity-0"}`}>
+              {[{val:"200+",label:"Styles"},{val:"50+",label:"Teams"},{val:"4.9★",label:"Rating"}].map(s => (
                 <div key={s.label} className="flex flex-col">
-                  <span className="font-anton text-[#FDFFE3] text-2xl sm:text-3xl premium-text">{s.val}</span>
-                  <span className="font-barlow text-[#FDFFE3]/50 text-xs tracking-[3px] uppercase mt-0.5 premium-text-soft">{s.label}</span>
+                  <span className="f-anton text-[#FDFFE3] ts" style={{ fontSize:'clamp(20px,2.3vw,30px)' }}>{s.val}</span>
+                  <span className="f-barlow text-[#FDFFE3]/45 uppercase mt-0.5 ts2" style={{ fontSize:10, letterSpacing:'0.28em' }}>{s.label}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* RIGHT */}
-          <div className={`w-full lg:w-[42%] flex justify-center lg:justify-end items-center animate-slideInRight delay-300 ${mounted ? "" : "opacity-0"}`}>
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 rounded-full pointer-events-none hidden lg:block" style={{ width:"340px", height:"340px", background:"radial-gradient(circle, rgba(245,247,0,0.12) 0%, transparent 70%)" }}/>
-            <div className="relative animate-float" style={{ width:"clamp(260px, 36vw, 560px)" }}>
-              <Image src="/pic1.jpg" alt="Jersey Model" width={760} height={1000} priority style={{ width:"clamp(420px, 40vw, 1300px)", height:"auto", maxHeight:"80svh", display:"block", objectFit:"contain", objectPosition:"center", filter:"drop-shadow(0 20px 60px rgba(0,0,0,0.55)) drop-shadow(0 5px 20px rgba(0,0,0,0.35))" }}/>
-              <div className={`absolute top-[12%] -left-4 sm:-left-8 bg-[#FDFFE3] text-[#00612E] rounded-2xl px-4 py-2 shadow-xl animate-fadeIn delay-900 premium-drop ${mounted ? "" : "opacity-0"}`}>
-                <p className="font-barlow font-semibold text-xs tracking-[2px] uppercase text-[#00612E]/60">New Drop</p>
-                <p className="font-anton text-[#00612E] text-lg leading-tight">World Cup26</p>
+          <div className={`w-full lg:w-[44%] flex justify-center lg:justify-end items-end self-end a-slideR d3 ${mounted?"":"opacity-0"}`}>
+            <div className="relative a-float" style={{ width:'clamp(220px,36vw,520px)' }}>
+              <Image src="/pic1.jpg" alt="Jersey Model" width={700} height={950} priority
+                sizes="(max-width:768px) 78vw, 38vw"
+                style={{ width:'100%',height:'auto',maxHeight:'78svh',objectFit:'contain',objectPosition:'bottom center',
+                  filter:'drop-shadow(0 20px 52px rgba(0,0,0,0.5)) drop-shadow(0 4px 16px rgba(0,0,0,0.3))' }}/>
+
+              <div className={`absolute top-[10%] -left-3 sm:-left-6 bg-[#FDFFE3] text-[#00612E] rounded-2xl px-3.5 py-2 ds a-fadeIn d9 ${mounted?"":"opacity-0"}`}>
+                <p className="f-barlow font-semibold uppercase text-[#00612E]/52" style={{ fontSize:9,letterSpacing:'0.2em' }}>New Drop</p>
+                <p className="f-anton text-[#00612E] leading-tight" style={{ fontSize:16 }}>World Cup26</p>
               </div>
-              <div className={`absolute bottom-[18%] -right-2 sm:-right-6 bg-black/80 backdrop-blur-sm border border-[#FDFFE3]/10 text-[#FDFFE3] rounded-2xl px-4 py-3 animate-fadeIn delay-900 premium-drop ${mounted ? "" : "opacity-0"}`}>
-                <p className="font-barlow text-xs tracking-[2px] uppercase text-[#FDFFE3]/50">Starting from</p>
-                <p className="font-anton text-[#FDFFE3] text-2xl premium-text">$99.99</p>
+
+              <div className={`absolute bottom-[16%] -right-2 sm:-right-5 bg-black/80 backdrop-blur-sm border border-[#FDFFE3]/10 text-[#FDFFE3] rounded-2xl px-3.5 py-2.5 ds a-fadeIn d9 ${mounted?"":"opacity-0"}`}>
+                <p className="f-barlow uppercase text-[#FDFFE3]/45" style={{ fontSize:9,letterSpacing:'0.22em' }}>Starting from</p>
+                <p className="f-anton text-[#FDFFE3] ts" style={{ fontSize:22 }}>$99.99</p>
               </div>
             </div>
           </div>
@@ -407,13 +354,13 @@ export default function HeroSection() {
 
         {/* Ticker */}
         <div className="relative z-10 w-full border-t border-[#FDFFE3]/10 py-3 overflow-hidden mt-auto">
-          <div className="ticker-track animate-marquee">
-            {Array.from({ length: 2 }).map((_, i) => (
+          <div className="a-ticker">
+            {Array.from({length:2}).map((_,i) => (
               <span key={i} className="flex items-center">
-                {["EXCLUSIVE DROP","LIMITED EDITION","PREMIUM JERSEYS","FREE SHIPPING","NEW SEASON","WORLD CUP 26","RETRO CLASSICS"].map((word, j) => (
+                {["EXCLUSIVE DROP","LIMITED EDITION","PREMIUM JERSEYS","FREE SHIPPING","NEW SEASON","WORLD CUP 26","RETRO CLASSICS"].map((w,j) => (
                   <span key={`${i}-${j}`} className="flex items-center">
-                    <span className="font-barlow text-[#FDFFE3]/40 text-xs tracking-[4px] uppercase whitespace-nowrap px-6 premium-text-soft">{word}</span>
-                    <span className="text-[#FDFFE3]/20 text-xs">✦</span>
+                    <span className="f-barlow text-[#FDFFE3]/36 uppercase whitespace-nowrap px-6 ts2" style={{ fontSize:10,letterSpacing:'0.38em' }}>{w}</span>
+                    <span className="text-[#FDFFE3]/18" style={{ fontSize:10 }}>✦</span>
                   </span>
                 ))}
               </span>
