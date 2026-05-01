@@ -365,7 +365,7 @@ export default function ProductDetailPage() {
               {relatedToShow.map((item, index) => (
                 <Link
                   key={item.id}
-                  href={`/product/${item.id}`}
+                  href={`/products/${item.id}`}
                   className="group overflow-hidden rounded-[22px] border border-white/80 bg-white shadow-[0_16px_40px_rgba(0,0,0,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(0,0,0,0.08)]"
                   style={{ animationDelay: `${index * 60}ms` }}
                 >
