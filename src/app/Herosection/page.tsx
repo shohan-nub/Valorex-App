@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Image from "next/image";
 import Link from "next/link";
@@ -70,8 +70,8 @@ export default function HeroSection() {
   const NAV_LINKS = [
     { label: "Reviews", href: "/reviews" },
     { label: "Home", href: "/" },
-    { label: "About", href: "/about" },
-    { label: "worldCup", href: "/category/national" },
+    { label: "Top Pick", href: "/category/top_pick" },
+    { label: "Customize", href: "https://wa.me/8801XXXXXXXXX?text=Hi%20I%20want%20to%20customize%20a%20jersey" }, // এখানে নিজের নম্বর বসাবে
   ];
 
   return (
@@ -148,13 +148,27 @@ export default function HeroSection() {
           className={`hidden md:flex items-center gap-10 f-barlow font-semibold uppercase text-[#FDFFE3]/80 ts2 a-fadeIn d2 ${mounted ? "" : "opacity-0"}`}
           style={{ fontSize: 13, letterSpacing: "0.24em" }}
         >
-          {NAV_LINKS.map((l) => (
-            <li key={l.label}>
-              <Link href={l.href} className="nl hover:text-[#FDFFE3] transition-colors duration-200">
-                {l.label}
-              </Link>
-            </li>
-          ))}
+          {NAV_LINKS.map((l) => {
+            const isExternal = l.href.startsWith("http");
+            return (
+              <li key={l.label}>
+                {isExternal ? (
+                  <a
+                    href={l.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="nl hover:text-[#FDFFE3] transition-colors duration-200"
+                  >
+                    {l.label}
+                  </a>
+                ) : (
+                  <Link href={l.href} className="nl hover:text-[#FDFFE3] transition-colors duration-200">
+                    {l.label}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
         </ul>
 
         <div className={`flex items-center gap-2 a-fadeIn d3 ${mounted ? "" : "opacity-0"}`}>
@@ -256,18 +270,34 @@ export default function HeroSection() {
           style={{ background: "rgba(0, 80, 39, 0.58)", backdropFilter: "blur(14px)" }}
         >
           <ul className="space-y-1 mb-3">
-            {NAV_LINKS.map((l) => (
-              <li key={l.label}>
-                <Link
-                  href={l.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="block rounded-xl px-4 py-3 f-barlow font-semibold uppercase text-[#FDFFE3]/75 hover:bg-[#FDFFE3]/8 hover:text-[#FDFFE3] transition"
-                  style={{ fontSize: 13, letterSpacing: "0.2em" }}
-                >
-                  {l.label}
-                </Link>
-              </li>
-            ))}
+            {NAV_LINKS.map((l) => {
+              const isExternal = l.href.startsWith("http");
+              return (
+                <li key={l.label}>
+                  {isExternal ? (
+                    <a
+                      href={l.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMobileOpen(false)}
+                      className="block rounded-xl px-4 py-3 f-barlow font-semibold uppercase text-[#FDFFE3]/75 hover:bg-[#FDFFE3]/8 hover:text-[#FDFFE3] transition"
+                      style={{ fontSize: 13, letterSpacing: "0.2em" }}
+                    >
+                      {l.label}
+                    </a>
+                  ) : (
+                    <Link
+                      href={l.href}
+                      onClick={() => setMobileOpen(false)}
+                      className="block rounded-xl px-4 py-3 f-barlow font-semibold uppercase text-[#FDFFE3]/75 hover:bg-[#FDFFE3]/8 hover:text-[#FDFFE3] transition"
+                      style={{ fontSize: 13, letterSpacing: "0.2em" }}
+                    >
+                      {l.label}
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
           </ul>
           <div className="grid grid-cols-2 gap-2">
             <button

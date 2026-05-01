@@ -65,27 +65,21 @@ function LoginForm() {
       <div className="w-full max-w-sm">
 
         {/* Logo */}
-       <div className="text-center mb-8">
+       <div className="text-center mb-30">
   <Link href="/" className="flex items-center justify-center gap-0">
     
     <Image
       src="/v2.png"
       alt="Valorex Logo"
-      width={80}
-      height={80}
+      width={240}
+      height={200}
     />
 
-    <span
-      className="text-3xl font-bold"
-      style={{ fontFamily: 'Cormorant Garamond, serif', color: 'var(--text-1)' }}
-    >Valorex
-    </span>
+   
 
   </Link>
 
-  <p className="text-sm mt-2" style={{ color: 'var(--text-3)' }}>
-    Welcome back
-  </p>
+ 
 </div>
 
         <div className="rounded-2xl border p-6"
