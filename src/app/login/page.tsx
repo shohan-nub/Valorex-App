@@ -66,20 +66,19 @@ function LoginForm() {
 
         {/* Logo */}
        <div className="text-center mb-8">
-  <Link href="/" className="flex items-center justify-center gap-3">
+  <Link href="/" className="flex items-center justify-center gap-0">
     
     <Image
       src="/v2.png"
       alt="Valorex Logo"
-      width={40}
-      height={40}
+      width={80}
+      height={80}
     />
 
     <span
       className="text-3xl font-bold"
       style={{ fontFamily: 'Cormorant Garamond, serif', color: 'var(--text-1)' }}
-    >
-      Valorex
+    >Valorex
     </span>
 
   </Link>
