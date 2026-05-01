@@ -71,7 +71,7 @@ export default function HeroSection() {
     { label: "Reviews", href: "/reviews" },
     { label: "Home", href: "/" },
     { label: "Top Pick", href: "/category/top_pick" },
-    { label: "Customize", href: "https://wa.me/8801771084820?text=Hi%20I%20want%20to%20customize%20a%20jersey" }, // এখানে নিজের নম্বর বসাবে
+    { label: "Customize", href: "https://wa.me/8801771084820?text=Hi%20I%20want%20to%20customize%20a%20jersey%20from%20Your%20Premium%20shop" }, // এখানে নিজের নম্বর বসাবে
   ];
 
   return (
