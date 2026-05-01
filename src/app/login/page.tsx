@@ -1,5 +1,5 @@
 'use client'
-
+import Image from "next/image";
 import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '../lib/supabase/client'
@@ -65,13 +65,29 @@ function LoginForm() {
       <div className="w-full max-w-sm">
 
         {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold"
-            style={{ fontFamily: 'Cormorant Garamond, serif', color: 'var(--text-1)' }}>
-            ⚽ JerseyShop
-          </Link>
-          <p className="text-sm mt-2" style={{ color: 'var(--text-3)' }}>Welcome back</p>
-        </div>
+       <div className="text-center mb-8">
+  <Link href="/" className="flex items-center justify-center gap-3">
+    
+    <Image
+      src="/v2.png"
+      alt="Valorex Logo"
+      width={40}
+      height={40}
+    />
+
+    <span
+      className="text-3xl font-bold"
+      style={{ fontFamily: 'Cormorant Garamond, serif', color: 'var(--text-1)' }}
+    >
+      Valorex
+    </span>
+
+  </Link>
+
+  <p className="text-sm mt-2" style={{ color: 'var(--text-3)' }}>
+    Welcome back
+  </p>
+</div>
 
         <div className="rounded-2xl border p-6"
           style={{ background: 'var(--bg-2)', borderColor: 'var(--border)' }}>
