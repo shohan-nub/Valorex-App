@@ -457,7 +457,7 @@ export default function HeroSection() {
                   Starting from
                 </p>
                 <p className="f-anton text-[#FDFFE3] ts" style={{ fontSize: 22 }}>
-                  $99.99
+                  1250Tk
                 </p>
               </div>
             </div>
