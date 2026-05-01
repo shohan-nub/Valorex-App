@@ -35,20 +35,29 @@ export default function OrdersPage() {
   const supabase=createClient()
 
   useEffect(() => {
-    async function fetch() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+   async function fetchOrders() {
+  console.log("FETCH STARTED") // 👈 add this
 
-      const { data } = await supabase
-        .from('orders')
-        .select('id, total_amount, status, created_at, shipping_city')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+  try {
+    const supabase = createClient()
 
-      setOrders(data || [])
-      setLoading(false)
-    }
-    fetch()
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+
+    console.log("DATA:", data)
+    console.log("ERROR:", error)
+
+    if (error) throw error
+
+    setOrders(data || [])
+  } catch (err) {
+    console.error(err)
+  } finally {
+    setLoading(false)
+  }
+}
+    fetchOrders()
   }, [])
 
   if (loading) return <div className="p-8 text-sm text-gray-400">Loading...</div>

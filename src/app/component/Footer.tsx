@@ -4,79 +4,171 @@ import Link from "next/link";
 import Image from "next/image";
 
 const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Collection", href: "/products" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
+  { label: "Home",       href: "/"          },
+  { label: "Collection", href: "/products"  },
+  { label: "About",      href: "/about"     },
+  { label: "Contact",    href: "/contact"   },
+  { label: "Reviews",    href: "/reviews"   },
 ];
 
 const socials = [
   {
     label: "Facebook",
-    href: "https://www.facebook.com/share/1ZiA4jG1go/",
-    short: "FB",
+    href:  "https://www.facebook.com/share/1ZiA4jG1go/",
+    icon:  "/facebook.png",
   },
   {
     label: "Instagram",
-    href: "https://www.instagram.com/valorex_offficial?igsh=MXZkY284d2kxOXEw",
-    short: "IG",
+    href:  "https://www.instagram.com/valorex_offficial?igsh=MXZkY284d2kxOXEw",
+    icon:  "/instagram.png",
   },
 ];
 
+/* ── colours derived from #AAB99A ── */
+const C = {
+  bg:       "#AAB99A",          /* ← MAIN BG — change here */
+  bgDeep:   "#96a888",          /* slightly darker for depth */
+  text:     "#1a2614",          /* deep forest text           */
+  textSoft: "rgba(26,38,20,.6)",
+  white:    "#FDFFE3",
+  border:   "rgba(26,38,20,.12)",
+  card:     "rgba(255,255,255,.18)",
+  cardHov:  "rgba(255,255,255,.28)",
+};
+
 export default function Footer() {
   return (
-    <footer className="relative overflow-hidden bg-[#0A7A3A] text-[#FDFFE3]">
-      {/* ambient background */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="footer-glow footer-glow-1" />
-        <div className="footer-glow footer-glow-2" />
-        <div className="footer-glow footer-glow-3" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(255,255,255,0.06),transparent_18%,transparent_82%,rgba(0,0,0,0.08))]" />
+    <footer
+      className="relative overflow-hidden"
+      style={{ background: C.bg, color: C.text }}
+    >
+      <style>{`
+        /* noise texture overlay */
+        .ft-noise::before {
+          content:'';
+          position:absolute;inset:0;pointer-events:none;
+          background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          opacity:.04;z-index:0;
+        }
+        @keyframes ftFloat {
+          0%,100%{transform:translateY(0) scale(1)}
+          50%    {transform:translateY(-14px) scale(1.04)}
+        }
+        .ft-glow { animation:ftFloat 10s ease-in-out infinite; }
+        .ft-glow2{ animation:ftFloat 13s ease-in-out infinite; animation-delay:2s; }
+        .ft-glow3{ animation:ftFloat 8s  ease-in-out infinite; animation-delay:4s; }
+
+        .ft-link {
+          position:relative;
+          transition:color .22s,transform .22s;
+        }
+        .ft-link::after {
+          content:'';position:absolute;bottom:-2px;left:0;
+          width:0;height:1px;
+          background:${C.text};
+          transition:width .25s;
+        }
+        .ft-link:hover { color:${C.text} !important; transform:translateX(4px); }
+        .ft-link:hover::after { width:100%; }
+
+        .ft-card {
+          background:${C.card};
+          border:1px solid ${C.border};
+          border-radius:18px;
+          padding:16px;
+          backdrop-filter:blur(8px);
+          transition:background .25s, transform .25s, box-shadow .25s;
+        }
+        .ft-card:hover {
+          background:${C.cardHov};
+          transform:translateY(-3px);
+          box-shadow:0 12px 32px rgba(0,0,0,.10);
+        }
+
+        .ft-social {
+          width:52px;height:52px;border-radius:16px;
+          display:flex;align-items:center;justify-content:center;
+          background:${C.card};
+          border:1px solid ${C.border};
+          backdrop-filter:blur(8px);
+          transition:background .22s,transform .22s,box-shadow .22s;
+          overflow:hidden;
+        }
+        .ft-social:hover {
+          background:${C.cardHov};
+          transform:translateY(-4px) scale(1.08);
+          box-shadow:0 10px 28px rgba(0,0,0,.14);
+        }
+
+        .ft-divider { background:${C.border}; height:1px; }
+        .ft-pulse   { animation:pulse 2.5s ease-in-out infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+      `}</style>
+
+      {/* ── Ambient glows ── */}
+      <div className="ft-noise pointer-events-none absolute inset-0 z-0">
+        <div className="ft-glow  absolute -top-20 -left-16 w-72 h-72 rounded-full opacity-30"
+             style={{background:"radial-gradient(circle,rgba(255,255,200,.45) 0%,transparent 70%)"}}/>
+        <div className="ft-glow2 absolute top-1/3 right-10 w-56 h-56 rounded-full opacity-20"
+             style={{background:"radial-gradient(circle,rgba(255,255,255,.5) 0%,transparent 70%)"}}/>
+        <div className="ft-glow3 absolute -bottom-16 right-0 w-80 h-80 rounded-full opacity-25"
+             style={{background:"radial-gradient(circle,rgba(255,255,200,.35) 0%,transparent 70%)"}}/>
+        {/* diagonal lines — premium texture */}
+        <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="diag" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+              <line x1="0" y1="0" x2="0" y2="24" stroke={C.text} strokeWidth="0.8"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#diag)"/>
+        </svg>
       </div>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-6 py-16 sm:px-10 lg:px-16">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4">
-          {/* Brand */}
-          <div className="lg:col-span-1">
-            <div className="group inline-flex items-center gap-3">
-              <div className="relative rounded-2xl bg-white/10 p-2 shadow-[0_0_40px_rgba(255,255,255,0.10)] backdrop-blur-sm transition-transform duration-500 group-hover:scale-105">
-                <Image
-                  src="/logo.png"
-                  alt="Valorex logo"
-                  width={150}
-                  height={54}
-                  style={{ width: "auto", height: "auto" }}
-                  className="brightness-0 invert"
-                  priority
-                />
-              </div>
+      {/* ── Content ── */}
+      <div className="relative z-10 mx-auto max-w-7xl px-5 sm:px-10 lg:px-16 pt-16 pb-10">
+
+        {/* TOP: logo + tagline spanning full width */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12 pb-10"
+             style={{borderBottom:`1px solid ${C.border}`}}>
+
+          {/* Logo */}
+          <div className="flex flex-col gap-4">
+            <div className="relative w-fit rounded-2xl overflow-hidden"
+                 style={{background:"rgba(255,255,255,.22)",padding:"10px 16px",backdropFilter:"blur(10px)",border:`1px solid ${C.border}`}}>
+              <Image src="/v2.png" alt="Valorex" width={256} height={120}
+                className="h-20 w-auto object-contain" priority/>
             </div>
-
-            <p className="mt-5 max-w-sm text-sm leading-6 text-[#FDFFE3]/75">
-              Premium jerseys crafted for true fans. Style meets performance, with a clean
-              finish that feels modern and bold.
+            <p className="text-sm leading-relaxed max-w-xs" style={{color:C.textSoft}}>
+              Premium jerseys crafted for true fans. Style meets performance — bold, clean, and iconic.
             </p>
-
-            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2 text-xs tracking-[0.22em] text-[#FDFFE3]/80 backdrop-blur-sm">
-              <span className="h-2 w-2 rounded-full bg-[#FDFFE3] shadow-[0_0_14px_rgba(253,255,227,0.75)] animate-pulse" />
+            {/* live badge */}
+            <div className="inline-flex w-fit items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold"
+                 style={{background:"rgba(255,255,255,.22)",border:`1px solid ${C.border}`,letterSpacing:'0.22em',color:C.text}}>
+              <span className="ft-pulse w-2 h-2 rounded-full" style={{background:C.text}}/>
               PREMIUM SPORTSWEAR
             </div>
           </div>
 
+          {/* Big brand name */}
+          <div className="hidden lg:block select-none opacity-10"
+               style={{fontFamily:"'Anton SC',sans-serif",fontSize:96,lineHeight:1,color:C.text,letterSpacing:'-2px'}}>
+            VALOREX
+          </div>
+        </div>
+
+        {/* GRID */}
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+
           {/* Navigation */}
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.35em] text-[#FDFFE3]/70">
-              Navigation
-            </h3>
-            <ul className="mt-5 space-y-3 text-sm">
-              {navLinks.map((item) => (
-                <li key={item.label}>
-                  <Link
-                    href={item.href}
-                    className="group inline-flex items-center gap-2 text-[#FDFFE3]/80 transition-all duration-300 hover:translate-x-1 hover:text-white"
-                  >
-                    <span className="h-px w-4 bg-[#FDFFE3]/30 transition-all duration-300 group-hover:w-7 group-hover:bg-white" />
-                    <span>{item.label}</span>
+            <h3 className="text-[10px] font-bold uppercase mb-5"
+                style={{color:C.textSoft,letterSpacing:'0.38em'}}>Navigation</h3>
+            <ul className="space-y-3">
+              {navLinks.map(l => (
+                <li key={l.label}>
+                  <Link href={l.href} className="ft-link text-sm font-medium"
+                        style={{color:C.textSoft}}>
+                    {l.label}
                   </Link>
                 </li>
               ))}
@@ -84,140 +176,70 @@ export default function Footer() {
           </div>
 
           {/* Contact */}
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.35em] text-[#FDFFE3]/70">
-              Contact
-            </h3>
-
-            <div className="mt-5 space-y-4">
-              <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1 hover:bg-white/12">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-[#FDFFE3]/55">
-                  Address
-                </p>
-                <p className="mt-2 text-sm leading-6 text-[#FDFFE3]/85">
-                  House -14, Road No -5, Sector - 11, Uttara, Dhaka-1230
-                </p>
+          <div className="sm:col-span-2 lg:col-span-1">
+            <h3 className="text-[10px] font-bold uppercase mb-5"
+                style={{color:C.textSoft,letterSpacing:'0.38em'}}>Contact</h3>
+            <div className="space-y-3">
+              <div className="ft-card">
+                <p className="text-[10px] uppercase font-semibold mb-1" style={{color:C.textSoft,letterSpacing:'0.28em'}}>Address</p>
+                <p className="text-sm leading-5" style={{color:C.text}}>House-14, Road-5, Sector-11, Uttara, Dhaka-1230</p>
               </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1 hover:bg-white/12">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-[#FDFFE3]/55">
-                  Phone
-                </p>
-                <a
-                  href="tel:01328388457"
-                  className="mt-2 inline-block text-sm font-medium text-[#FDFFE3]/90 transition-colors hover:text-white"
-                >
-                  01328388457
-                </a>
+              <div className="ft-card">
+                <p className="text-[10px] uppercase font-semibold mb-1" style={{color:C.textSoft,letterSpacing:'0.28em'}}>Phone</p>
+                <a href="tel:01328388457" className="text-sm font-medium hover:underline" style={{color:C.text}}>01328388457</a>
               </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1 hover:bg-white/12">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-[#FDFFE3]/55">
-                  Email
-                </p>
-                <a
-                  href="mailto:valorex.business@gmail.com"
-                  className="mt-2 inline-block text-sm font-medium text-[#FDFFE3]/90 transition-colors hover:text-white"
-                >
+              <div className="ft-card">
+                <p className="text-[10px] uppercase font-semibold mb-1" style={{color:C.textSoft,letterSpacing:'0.28em'}}>Email</p>
+                <a href="mailto:valorex.business@gmail.com" className="text-sm font-medium hover:underline break-all" style={{color:C.text}}>
                   valorex.business@gmail.com
                 </a>
               </div>
             </div>
           </div>
 
-          {/* Social */}
-          <div>
-            <h3 className="text-xs font-semibold uppercase tracking-[0.35em] text-[#FDFFE3]/70">
-              Connect
-            </h3>
+          {/* Social + Location */}
+          <div className="sm:col-span-2 lg:col-span-2">
+            <h3 className="text-[10px] font-bold uppercase mb-5"
+                style={{color:C.textSoft,letterSpacing:'0.38em'}}>Connect</h3>
 
-            <div className="mt-5 flex gap-3">
-              {socials.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={item.label}
-                  className="group inline-flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/8 text-sm font-semibold text-[#FDFFE3]/90 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:bg-white/16 hover:shadow-[0_0_30px_rgba(255,255,255,0.18)]"
-                >
-                  {item.short}
+            {/* Social icons with image */}
+            <div className="flex gap-3 mb-6">
+              {socials.map(s => (
+                <a key={s.label} href={s.href} target="_blank" rel="noreferrer"
+                   aria-label={s.label} className="ft-social">
+                  <Image src={s.icon} alt={s.label} width={28} height={28}
+                    className="w-7 h-7 object-contain"/>
                 </a>
               ))}
             </div>
 
-            <div className="mt-6 rounded-2xl border border-white/10 bg-white/8 p-4 backdrop-blur-sm">
-              <p className="text-[11px] uppercase tracking-[0.28em] text-[#FDFFE3]/55">
-                Location
-              </p>
-              <p className="mt-2 text-sm leading-6 text-[#FDFFE3]/85">
-                Dhaka, Bangladesh
-              </p>
-            </div>
-
-            <p className="mt-5 text-sm leading-6 text-[#FDFFE3]/70">
-              Follow us for new drops, behind-the-scenes updates, and latest collections.
+            <p className="text-sm leading-relaxed mb-6" style={{color:C.textSoft}}>
+              Follow us for new drops, behind-the-scenes updates, and the latest collections.
             </p>
+
+            {/* Location card */}
+            <div className="ft-card flex items-start gap-3">
+              <span style={{fontSize:20}}>📍</span>
+              <div>
+                <p className="text-[10px] uppercase font-semibold mb-0.5" style={{color:C.textSoft,letterSpacing:'0.28em'}}>Location</p>
+                <p className="text-sm" style={{color:C.text}}>Dhaka, Bangladesh</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* bottom bar */}
-        <div className="mt-14 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-[#FDFFE3]/55">
+        {/* BOTTOM BAR */}
+        <div className="ft-divider mt-12 mb-6"/>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs" style={{color:C.textSoft}}>
             © {new Date().getFullYear()} Valorex. All rights reserved.
           </p>
-
-          <div className="flex items-center gap-4 text-xs text-[#FDFFE3]/55">
-            <span className="inline-flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#FDFFE3] animate-pulse" />
-              Crafted for premium sportswear lovers
-            </span>
+          <div className="flex items-center gap-2 text-xs" style={{color:C.textSoft}}>
+            <span className="ft-pulse w-1.5 h-1.5 rounded-full inline-block" style={{background:C.text}}/>
+            Crafted for premium sportswear lovers
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .footer-glow {
-          position: absolute;
-          border-radius: 9999px;
-          filter: blur(40px);
-          opacity: 0.35;
-          animation: floatGlow 9s ease-in-out infinite;
-        }
-        .footer-glow-1 {
-          width: 18rem;
-          height: 18rem;
-          top: -4rem;
-          left: -3rem;
-          background: rgba(255, 255, 120, 0.12);
-        }
-        .footer-glow-2 {
-          width: 16rem;
-          height: 16rem;
-          right: 10%;
-          top: 20%;
-          background: rgba(255, 255, 255, 0.08);
-          animation-delay: 1.5s;
-        }
-        .footer-glow-3 {
-          width: 22rem;
-          height: 22rem;
-          right: -6rem;
-          bottom: -7rem;
-          background: rgba(255, 255, 120, 0.1);
-          animation-delay: 3s;
-        }
-
-        @keyframes floatGlow {
-          0%,
-          100% {
-            transform: translateY(0px) translateX(0px) scale(1);
-          }
-          50% {
-            transform: translateY(-18px) translateX(10px) scale(1.05);
-          }
-        }
-      `}</style>
     </footer>
   );
 }

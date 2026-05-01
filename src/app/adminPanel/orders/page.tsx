@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { createClient } from '@/app/lib/supabase/client'
+import { createClient } from '../../../app/lib/supabase/client'
 
 interface OrderItem {
   id: string
