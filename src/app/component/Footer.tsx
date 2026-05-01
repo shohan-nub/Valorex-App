@@ -26,7 +26,7 @@ const socials = [
 
 /* ── colours derived from #AAB99A ── */
 const C = {
-  bg:       "#AAB99A",          /* ← MAIN BG — change here */
+  bg:       "#5FAF7B",          /* ← MAIN BG — change here */
   bgDeep:   "#96a888",          /* slightly darker for depth */
   text:     "#1a2614",          /* deep forest text           */
   textSoft: "rgba(26,38,20,.6)",

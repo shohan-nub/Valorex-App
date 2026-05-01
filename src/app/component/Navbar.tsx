@@ -118,8 +118,8 @@ export default function Navbar() {
         }`}
         style={{
           background: showNav
-            ? 'linear-gradient(180deg, rgba(0,97,46,0.94) 0%, rgba(0,97,46,0.84) 100%)'
-            : 'linear-gradient(180deg, rgba(0,97,46,0.10) 0%, rgba(0,97,46,0.02) 100%)',
+  ? '#5FAF7B'
+  : '#5FAF7B',
           backdropFilter: 'blur(18px)',
           borderBottom: '1px solid rgba(253,255,227,0.10)',
           boxShadow: showNav ? '0 18px 50px rgba(0,0,0,0.18)' : 'none',

@@ -139,7 +139,7 @@ export default function HeroSection() {
             alt="Logo"
             width={140}
             height={56}
-            className="h-10 sm:h-12 w-auto object-contain brightness-0 invert sepia saturate-[3] hue-rotate-[55deg] scale-110 origin-left ds"
+            className="h-10 sm:h-16 w-auto object-contain brightness-0 invert sepia saturate-[3] hue-rotate-[55deg] scale-110 origin-left ds"
             priority
           />
         </div>
@@ -320,7 +320,7 @@ export default function HeroSection() {
       {/* HERO */}
       <section
         id="hero-section"
-        className="relative w-full bg-[#AAB99A] overflow-hidden flex flex-col"
+        className="relative w-full bg-[#5FAF7B] overflow-hidden flex flex-col"
         style={{ minHeight: "100svh" }}
       >
         <div className="absolute inset-0 z-0">
