@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "./Cartcontext";
-import Navbar from "./component/Navbar";
+
 import Footer from "./component/Footer";
 import Script from "next/script";
+import ConditionalNavbar from "./component/condinav";
 
 // ── SEO Metadata ──────────────────────────────────────────────
 export const metadata: Metadata = {
@@ -98,7 +99,7 @@ export default function RootLayout({
       <body>
         <CartProvider>
           <div className="min-h-screen flex flex-col bg-[var(--bg)]">
-            <Navbar />
+            <ConditionalNavbar />
             <main className="flex-1">{children}</main>
             <Footer />
           </div>
