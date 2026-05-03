@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useCart } from '../Cartcontext'
 import { createClient } from '@/app/lib/supabase/client'
 
-const BKASH_NUMBER = '01771084820'
+const BKASH_NUMBER = '01612389216'
 
 type Step = 'info' | 'payment' | 'done'
 type PaymentMethod = 'bkash' | 'cod'
