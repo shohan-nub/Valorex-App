@@ -20,7 +20,7 @@ function LoginForm() {
     setError('')
 
     if (!email.trim() || !password) {
-      setError('Email ও password দাও।')
+      setError('Please enter your email and password.')
       return
     }
 
@@ -38,9 +38,9 @@ function LoginForm() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Login failed'
       if (msg.includes('Invalid login credentials')) {
-        setError('Email বা password ভুল।')
+        setError('Invalid email or password.')
       } else if (msg.includes('Email not confirmed')) {
-        setError('Email verify করো আগে — inbox চেক করো।')
+        setError('Please verify your email first. Check your inbox.')
       } else {
         setError(msg)
       }
@@ -60,31 +60,28 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4"
-      style={{ background: 'var(--bg)' }}>
+    <div
+      className="min-h-screen flex items-center justify-center px-4"
+      style={{ background: 'var(--bg)' }}
+    >
       <div className="w-full max-w-sm">
 
         {/* Logo */}
-       <div className="text-center mb-30">
-  <Link href="/" className="flex items-center justify-center gap-0">
-    
-    <Image
-      src="/v2.png"
-      alt="Valorex Logo"
-      width={240}
-      height={200}
-    />
+        <div className="text-center mb-30">
+          <Link href="/" className="flex items-center justify-center gap-0">
+            <Image
+              src="/v2.png"
+              alt="Valorex Logo"
+              width={240}
+              height={200}
+            />
+          </Link>
+        </div>
 
-   
-
-  </Link>
-
- 
-</div>
-
-        <div className="rounded-2xl border p-6"
-          style={{ background: 'var(--bg-2)', borderColor: 'var(--border)' }}>
-
+        <div
+          className="rounded-2xl border p-6"
+          style={{ background: 'var(--bg-2)', borderColor: 'var(--border)' }}
+        >
           {/* Google */}
           <button
             type="button"
@@ -141,12 +138,13 @@ function LoginForm() {
             </button>
           </form>
 
-          <p className="text-center text-xs mt-4" style={{ color: 'var(--text-3)' }}>
-            Account নেই?{' '}
-            <Link href={`/signup${next !== '/' ? `?next=${next}` : ''}`}
-              className="font-semibold hover:underline"
-              style={{ color: 'var(--accent)' }}>
-              Sign Up করো
+          <p className="mt-5 text-center text-sm sm:text-base">
+            <span className="text-gray-500">No account?</span>{' '}
+            <Link
+              href={`/signup${next !== '/' ? `?next=${next}` : ''}`}
+              className="font-semibold text-green-600 hover:text-green-700 hover:underline"
+            >
+              Sign up
             </Link>
           </p>
         </div>

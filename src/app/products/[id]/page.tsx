@@ -6,6 +6,7 @@ import { useCart } from '../../Cartcontext'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/app/lib/supabase/client'
+import { Product } from '../../../../../mm/types/index';
 
 interface Product {
   id: string
@@ -15,8 +16,11 @@ interface Product {
   image_url: string
   extra_images: string[]
   sizes: string[]
-  stock: number
+  stock:number
   category: string
+ 
+ 
+
 }
 
 interface Review {

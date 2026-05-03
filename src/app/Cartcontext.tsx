@@ -46,30 +46,53 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [items, hydrated])
 
-  function addItem(item: CartItem) {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id && i.size === item.size)
-      if (existing) {
-        return prev.map((i) =>
-          i.id === item.id && i.size === item.size
-            ? { ...i, quantity: i.quantity + item.quantity }
-            : i
-        )
-      }
-      return [...prev, item]
-    })
-  }
+function addItem(item: CartItem) {
+  setItems((prev) => {
+    const existing = prev.find(
+      (i) => i.id === item.id && i.size === item.size
+    )
+
+    if (existing) {
+      const maxStock =
+        typeof item.stock === 'number' ? item.stock : Infinity
+
+      const newQty = Math.min(
+        existing.quantity + item.quantity,
+        maxStock
+      )
+
+      return prev.map((i) =>
+        i.id === item.id && i.size === item.size
+          ? { ...i, quantity: newQty }
+          : i
+      )
+    }
+
+    return [...prev, item]
+  })
+}
 
   function removeItem(id: string, size: string) {
     setItems((prev) => prev.filter((i) => !(i.id === id && i.size === size)))
   }
 
-  function updateQty(id: string, size: string, qty: number) {
-    if (qty < 1) return removeItem(id, size)
-    setItems((prev) =>
-      prev.map((i) => (i.id === id && i.size === size ? { ...i, quantity: qty } : i))
-    )
-  }
+ function updateQty(id: string, size: string, qty: number) {
+  setItems((prev) =>
+    prev.map((i) => {
+      if (i.id === id && i.size === size) {
+        if (qty < 1) return i
+
+        const maxStock =
+          typeof i.stock === 'number' ? i.stock : Infinity
+
+        const safeQty = Math.min(qty, maxStock)
+
+        return { ...i, quantity: safeQty }
+      }
+      return i
+    })
+  )
+}
 
   function clearCart() {
     setItems([])

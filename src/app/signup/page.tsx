@@ -20,12 +20,20 @@ function SignupForm() {
     e.preventDefault()
     setError('')
 
-    if (!name.trim()) { setError('নাম দাও।'); return }
-    if (!email.trim()) { setError('Email দাও।'); return }
-    if (password.length < 6) { setError('Password কমপক্ষে ৬ character হতে হবে।'); return }
+    if (!name.trim()) {
+      setError('Please enter your name.')
+      return
+    }
+    if (!email.trim()) {
+      setError('Please enter your email.')
+      return
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.')
+      return
+    }
 
     setLoading(true)
-
     const supabase = createClient()
 
     try {
@@ -39,24 +47,23 @@ function SignupForm() {
 
       if (signupError) throw signupError
 
-      // Email confirmation off থাকলে সরাসরি session পাবে
       if (data.session) {
         router.push(next)
         router.refresh()
         return
       }
 
-      // Confirmation on থাকলে
       if (data.user && !data.session) {
-        setError('✉️ Email চেক করো — confirmation link পাঠানো হয়েছে।')
+        setError('Please check your email to confirm your account.')
       }
 
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Signup failed'
-      if (msg.includes('already registered') || msg.includes('User already registered')) {
-        setError('এই email দিয়ে আগেই account আছে।')
+
+      if (msg.includes('already registered')) {
+        setError('This email is already registered.')
       } else if (msg.includes('Database error')) {
-        setError('Database সমস্যা — Supabase SQL trigger ঠিক করো।')
+        setError('Database issue. Please check your setup.')
       } else {
         setError(msg)
       }
@@ -84,16 +91,18 @@ function SignupForm() {
         <div className="text-center mb-8">
           <Link href="/" className="text-3xl font-bold"
             style={{ fontFamily: 'Cormorant Garamond, serif', color: 'var(--text-1)' }}>
-            ⚽ JerseyShop
+            Valorex
           </Link>
-          <p className="text-sm mt-2" style={{ color: 'var(--text-3)' }}>নতুন account বানাও</p>
+          <p className="text-sm mt-2 text-gray-500">
+            Create your account
+          </p>
         </div>
 
         <div className="rounded-2xl border p-6"
           style={{ background: 'var(--bg-2)', borderColor: 'var(--border)' }}>
 
           {/* Google */}
-          <button
+           <button
             type="button"
             onClick={handleGoogle}
             className="w-full flex items-center justify-center gap-3 py-2.5 rounded-xl border text-sm font-medium transition hover:opacity-80 mb-4"
@@ -110,7 +119,7 @@ function SignupForm() {
 
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
-            <span className="text-xs" style={{ color: 'var(--text-3)' }}>or</span>
+            <span className="text-xs text-gray-400">or</span>
             <div className="flex-1 h-px" style={{ background: 'var(--border)' }} />
           </div>
 
@@ -121,31 +130,25 @@ function SignupForm() {
               placeholder="Full Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              autoComplete="name"
               className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', color: 'var(--text-1)' }}
             />
             <input
               type="email"
               placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
               className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', color: 'var(--text-1)' }}
             />
             <input
               type="password"
               placeholder="Password (min 6 characters)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              autoComplete="new-password"
               className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
-              style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', color: 'var(--text-1)' }}
             />
 
             {error && (
-              <p className="text-xs px-1" style={{ color: error.startsWith('✉️') ? 'var(--accent)' : 'var(--red)' }}>
+              <p className="text-xs px-1 text-red-500">
                 {error}
               </p>
             )}
@@ -153,18 +156,20 @@ function SignupForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 rounded-xl text-sm font-semibold transition disabled:opacity-50 btn-accent"
+              className="w-full py-2.5 rounded-xl text-sm font-semibold btn-accent"
             >
               {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </form>
 
-          <p className="text-center text-xs mt-4" style={{ color: 'var(--text-3)' }}>
-            আগেই account আছে?{' '}
-            <Link href={`/login${next !== '/' ? `?next=${next}` : ''}`}
-              className="font-semibold hover:underline"
-              style={{ color: 'var(--accent)' }}>
-              Login করো
+          {/* 🔥 UPDATED BOTTOM TEXT */}
+          <p className="mt-5 text-center text-sm sm:text-base">
+            <span className="text-gray-500">Already have an account?</span>{' '}
+            <Link
+              href={`/login${next !== '/' ? `?next=${next}` : ''}`}
+              className="font-semibold text-green-600 hover:text-green-700 hover:underline"
+            >
+              Login
             </Link>
           </p>
         </div>
