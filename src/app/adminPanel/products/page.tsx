@@ -1,153 +1,157 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-
-import Link from 'next/link'
-import Image from 'next/image'
 import { createClient } from '@/app/lib/supabase/client'
+import Image from 'next/image'
+import Link from 'next/link' // এটি অবশ্যই লাগবে Edit লিঙ্কের জন্য
 
 interface Product {
   id: string
   name: string
   price: number
   category: string
-  stock: number
   image_url: string
-  is_active: boolean
+  stock: number
   created_at: string
-}
-
-const categoryLabels: Record<string, string> = {
-  top_pick: 'Top Pick',
-  club: 'Club',
-  retro: 'Retro',
-  national: 'National',
 }
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
- const supabase=createClient();
+  const supabase = createClient()
+
   useEffect(() => {
     fetchProducts()
   }, [])
 
   async function fetchProducts() {
-   
-    const { data } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false })
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
 
-    setProducts(data || [])
-    setLoading(false)
+      if (error) throw error
+      setProducts(data || [])
+    } catch (error) {
+      console.error('Error fetching products:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('এই product delete করবে?')) return
+    if (!confirm('Are you sure you want to delete this product?')) return
+
     setDeletingId(id)
- 
-    await supabase.from('products').delete().eq('id', id)
-    setProducts((prev) => prev.filter((p) => p.id !== id))
-    setDeletingId(null)
+    try {
+      const { error } = await supabase.from('products').delete().eq('id', id)
+      if (error) throw error
+      setProducts(products.filter((p) => p.id !== id))
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      alert('Failed to delete product')
+    } finally {
+      setDeletingId(null)
+    }
   }
 
-  async function toggleActive(id: string, current: boolean) {
-
-    await supabase.from('products').update({ is_active: !current }).eq('id', id)
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, is_active: !current } : p))
-    )
+  if (loading) {
+    return <div className="p-10 text-center text-gray-500">Loading products...</div>
   }
-
-  if (loading) return <div className="text-gray-500 text-sm">Loading...</div>
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Products</h2>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Products Management</h1>
+          <p className="text-gray-500 text-sm">Manage your store inventory and prices</p>
+        </div>
         <Link
           href="/adminPanel/products/new"
-          className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-blue-700 transition flex items-center gap-2"
         >
-          + Add Product
+          <span className="text-xl">+</span> Add New Product
         </Link>
       </div>
 
-      {products.length === 0 ? (
-        <div className="bg-white rounded-xl p-10 text-center text-gray-400 shadow-sm">
-          <p className="text-lg mb-2">No products yet</p>
-          <Link href="/adminPanel/products/new" className="text-blue-600 text-sm hover:underline">
-            Add your first product →
-          </Link>
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-400 border-b border-gray-100 bg-gray-50">
-                <th className="px-5 py-3 font-medium">Product</th>
-                <th className="px-5 py-3 font-medium">Category</th>
-                <th className="px-5 py-3 font-medium">Price</th>
-                <th className="px-5 py-3 font-medium">Stock</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      {product.image_url ? (
-                        <Image
-                          src={product.image_url}
-                          alt={product.name}
-                          width={40}
-                          height={40}
-                          className="rounded-lg object-cover w-10 h-10"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-300">
-                          📷
-                        </div>
-                      )}
-                      <span className="font-medium text-gray-800">{product.name}</span>
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50/50 border-b border-gray-100">
+              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Product</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Price</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {products.map((product) => (
+              <tr key={product.id} className="hover:bg-gray-50/50 transition">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-100 bg-gray-50">
+                      <Image
+                        src={product.image_url || '/placeholder.png'}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
-                  </td>
-                  <td className="px-5 py-3 text-gray-500">
-                    {categoryLabels[product.category] || product.category}
-                  </td>
-                  <td className="px-5 py-3 font-medium text-gray-800">৳{product.price}</td>
-                  <td className="px-5 py-3 text-gray-600">{product.stock} pcs</td>
-                  <td className="px-5 py-3">
-                    <button
-                      onClick={() => toggleActive(product.id, product.is_active)}
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        product.is_active
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}
+                    <div>
+                      <div className="font-medium text-gray-900">{product.name}</div>
+                      <div className="text-xs text-gray-400 font-mono">{product.id.slice(0, 8)}...</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-medium capitalize">
+                    {product.category.replace('_', ' ')}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm font-semibold text-gray-900">৳{product.price}</div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className={`text-sm ${product.stock < 5 ? 'text-red-500 font-bold' : 'text-gray-600'}`}>
+                    {product.stock} pcs
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center justify-end gap-4">
+                    {/* --- এডিট বাটন শুরু --- */}
+                    <Link
+                      href={`/adminPanel/products/${product.id}/edit`}
+                      className="text-indigo-600 hover:text-indigo-900 text-sm font-medium transition-colors p-1"
+                      title="Edit Product"
                     >
-                      {product.is_active ? 'Active' : 'Hidden'}
-                    </button>
-                  </td>
-                  <td className="px-5 py-3">
+                      Edit
+                    </Link>
+                    {/* --- এডিট বাটন শেষ --- */}
+
                     <button
                       onClick={() => handleDelete(product.id)}
                       disabled={deletingId === product.id}
-                      className="text-red-500 hover:text-red-700 text-xs disabled:opacity-40"
+                      className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors disabled:opacity-30 p-1"
+                      title="Delete Product"
                     >
-                      {deletingId === product.id ? 'Deleting...' : 'Delete'}
+                      {deletingId === product.id ? '...' : 'Delete'}
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {products.length === 0 && (
+          <div className="p-20 text-center text-gray-400">
+            No products found. Start by adding one!
+          </div>
+        )}
+      </div>
     </div>
   )
 }

@@ -8,7 +8,7 @@ const navItems = [
   { label: 'Dashboard',     href: '/adminPanel',                icon: '📊' },
   { label: 'Products',      href: '/adminPanel/products',       icon: '📦' },
   { label: 'Orders',        href: '/adminPanel/orders',         icon: '🛒' },
-  { label: 'Hero Slides',   href: '/adminPanel/heroSlides',     icon: '🖼️' },
+  { label: 'Hero Slides',   href: '/adminPanel/heroslides',     icon: '🖼️' },
   { label: 'Review Images', href: '/adminPanel/reviewImages',   icon: '⭐' },
 ]
 

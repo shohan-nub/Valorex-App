@@ -1,11 +1,15 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import Navbar from './Navbar'
-
+import HeroNav from './heronav'
 export default function ConditionalNavbar() {
   const pathname = usePathname()
-  // homepage এ navbar দেখাবে না
-  if (pathname === '/') return null
-  return <Navbar />
+
+  // 🔥 navbar hide routes
+  const hideNavbar =
+    pathname === '/' || pathname.startsWith('/adminPanel')
+
+  if (hideNavbar) return null
+
+  return <HeroNav />
 }

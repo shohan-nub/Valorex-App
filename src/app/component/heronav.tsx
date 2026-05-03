@@ -9,7 +9,7 @@ import { useCart } from "../Cartcontext";
 import { createClient } from "../lib/supabase/client";
 import SearchModal from "../Searchmodal";
 
-export default function Navbar() {
+export default function HeroNav() {
   const router = useRouter();
   const supabase = createClient();
   const { totalItems } = useCart();

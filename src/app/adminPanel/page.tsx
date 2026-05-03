@@ -133,7 +133,7 @@ export default function AdminDashboard() {
         {[
           { href: '/adminPanel/products/new', label: '+ Add Product', primary: true },
           { href: '/adminPanel/orders',       label: '📋 All Orders',    primary: false },
-          { href: '/adminPanel/heroSlides',   label: '🖼️ Hero Slides',  primary: false },
+          { href: '/adminPanel/heroslides',   label: '🖼️ Hero Slides',  primary: false },
           { href: '/adminPanel/reviewImages', label: '⭐ Review Images', primary: false },
         ].map(btn => (
           <Link key={btn.href} href={btn.href}
