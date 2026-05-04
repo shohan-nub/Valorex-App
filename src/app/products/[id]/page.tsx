@@ -6,6 +6,7 @@ import { useCart } from '../../Cartcontext'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/app/lib/supabase/client'
+import ReviewSection from '@/app/ReviewSection'
 
 interface ProductData {
   id: string
@@ -469,32 +470,7 @@ export default function ProductDetailPage() {
           )}
         </section>
 
-        <section className="mt-10 fade-up pb-8">
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[4px] text-[#00612E]/60">Customer voices</p>
-              <h2 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">Reviews {reviews.length > 0 && `(${reviews.length})`}</h2>
-            </div>
-          </div>
-
-          {reviews.length === 0 ? (
-            <div className="rounded-[28px] border border-dashed border-[#00612E]/15 bg-white p-8 text-sm text-slate-500 shadow-sm">
-              No reviews yet.
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {reviews.map((r) => (
-                <div key={r.id} className="rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_14px_40px_rgba(0,0,0,0.05)]">
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <div className="text-sm text-yellow-400">{'⭐'.repeat(r.rating)}</div>
-                    <span className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString('en-BD')}</span>
-                  </div>
-                  <p className="text-sm leading-7 text-slate-700">{r.comment}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+       <ReviewSection productId={product.id} />
       </div>
     </div>
   )

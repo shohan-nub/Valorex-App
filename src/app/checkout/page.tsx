@@ -176,10 +176,10 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const redirectedRef = useRef(false)
-
+// charge setup
   const deliveryCharge = info.city?.trim()
     ? info.city.trim().toLowerCase() === 'dhaka'
-      ? 70
+      ? 80
       : 120
     : 0
 
