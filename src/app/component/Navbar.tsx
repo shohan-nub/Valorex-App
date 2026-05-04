@@ -189,7 +189,7 @@ export default function Navbar() {
                     </div>
                     {isAdmin && <Link href="/adminPanel" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[#FDFFE3] hover:bg-[#FDFFE3]/8 transition">⚙️ Admin Panel</Link>}
                     <Link href="/orders"  onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[#FDFFE3]/82 hover:bg-[#FDFFE3]/8 transition">📦 My Orders</Link>
-                    <Link href="/reviews" onClick={() => setMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[#FDFFE3]/82 hover:bg-[#FDFFE3]/8 transition">⭐ Reviews</Link>
+                   
                     <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[#ffb3b3] hover:bg-[#FDFFE3]/8 transition">🚪 Logout</button>
                   </div>
                 )}
