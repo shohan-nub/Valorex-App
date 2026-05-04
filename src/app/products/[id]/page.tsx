@@ -430,7 +430,7 @@ export default function ProductDetailPage() {
               <p className="text-xs font-semibold uppercase tracking-[4px] text-[#00612E]/60">More from this category</p>
               <h2 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">You may also like</h2>
             </div>
-            <p className="hidden text-sm text-slate-500 sm:block">Showing {relatedToShow.length} random picks for your screen size</p>
+            
           </div>
 
           {relatedToShow.length === 0 ? (
