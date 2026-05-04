@@ -6,9 +6,8 @@ import { useCart } from '../../Cartcontext'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/app/lib/supabase/client'
-import { Product } from '../../../../../mm/types/index';
 
-interface Product {
+interface ProductData {
   id: string
   name: string
   price: number
@@ -16,11 +15,8 @@ interface Product {
   image_url: string
   extra_images: string[]
   sizes: string[]
-  stock:number
+  stock: number
   category: string
- 
- 
-
 }
 
 interface Review {
@@ -65,13 +61,26 @@ export default function ProductDetailPage() {
   const router = useRouter()
   const { addItem, items } = useCart()
 
-  const [product, setProduct] = useState<Product | null>(null)
+  const [product, setProduct] = useState<ProductData | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>([])
   const [selectedSize, setSelectedSize] = useState('')
   const [activeImage, setActiveImage] = useState('')
   const [loading, setLoading] = useState(true)
   const [visibleCount, setVisibleCount] = useState(4)
+
+  const sizeGuide = [
+    { size: 'S', chest: '36–38"', fit: 'Slim fit' },
+    { size: 'M', chest: '38–40"', fit: 'Regular fit' },
+    { size: 'L', chest: '40–42"', fit: 'Comfort fit' },
+    { size: 'XL', chest: '42–44"', fit: 'Relaxed fit' },
+  ]
+
+  const policyPoints = [
+    'Return possible within 1 day',
+    'Item must be unused & fresh condition',
+    'Exchange available if stock exists',
+  ]
 
   useEffect(() => {
     const updateCount = () => setVisibleCount(getVisibleCount(window.innerWidth))
@@ -92,10 +101,11 @@ export default function ProductDetailPage() {
       ])
 
       if (p) {
-        setProduct(p)
-        setActiveImage(p.image_url || FALLBACK_IMAGE)
+        setProduct(p as ProductData)
+        setActiveImage((p as ProductData).image_url || FALLBACK_IMAGE)
       }
-      setReviews(r || [])
+
+      setReviews((r || []) as Review[])
       setLoading(false)
     }
 
@@ -110,7 +120,7 @@ export default function ProductDetailPage() {
       const { data } = await supabase
         .from('products')
         .select('id, name, price, image_url, stock, category')
-        .eq('category', product?.category)
+        .eq('category', product.category)
         .eq('is_active', true)
         .neq('id', id)
         .limit(24)
@@ -135,18 +145,25 @@ export default function ProductDetailPage() {
       .reduce((sum, item) => sum + item.quantity, 0)
   }, [items, product])
 
-  const remainingStock = product ? Math.max(product.stock - quantityInCart, 0) : 0
-  const outOfStock = !product || remainingStock <= 0
+  const outOfStock = !product || product.stock <= 0
+
+  function handleBack() {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back()
+    } else {
+      router.push('/')
+    }
+  }
 
   function addToCartOrBuyNow(nextRoute: '/cart' | '/checkout') {
     if (!product) return
 
-    if (!selectedSize && product.sizes?.length > 0) {
+    if (product.sizes?.length > 0 && !selectedSize) {
       alert('Please select a size')
       return
     }
 
-    if (remainingStock <= 0) {
+    if (product.stock <= 0) {
       alert('Sorry, no stock left for this product.')
       return
     }
@@ -207,18 +224,46 @@ export default function ProductDetailPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,#fbfcfa_0%,#f6f8f5_100%)]">
-      <style>{`\n        @keyframes fadeUp {\n          from { opacity: 0; transform: translateY(18px); }\n          to { opacity: 1; transform: translateY(0); }\n        }\n        .fade-up { animation: fadeUp 0.7s ease both; }\n\n        @keyframes floatSoft {\n          0%, 100% { transform: translateY(0px); }\n          50% { transform: translateY(-8px); }\n        }\n        .float-soft { animation: floatSoft 7s ease-in-out infinite; }\n\n        @keyframes shimmer {\n          0% { background-position: -200% 0; }\n          100% { background-position: 200% 0; }\n        }\n        .shimmer {\n          background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 100%);\n          background-size: 200% 100%;\n          animation: shimmer 3s linear infinite;\n        }\n      `}</style>
+      <style>{`
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(18px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-up { animation: fadeUp 0.7s ease both; }
+
+        @keyframes floatSoft {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        .float-soft { animation: floatSoft 7s ease-in-out infinite; }
+
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        .shimmer {
+          background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 100%);
+          background-size: 200% 100%;
+          animation: shimmer 3s linear infinite;
+        }
+      `}</style>
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-20 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-[#00612E]/10 blur-3xl float-soft" />
-        <div className="absolute top-40 -left-16 h-64 w-64 rounded-full bg-[#FDFFE3]/90 blur-3xl float-soft" style={{ animationDelay: '1.2s' }} />
-        <div className="absolute bottom-10 right-0 h-72 w-72 rounded-full bg-[#00612E]/6 blur-3xl float-soft" style={{ animationDelay: '2s' }} />
+        <div
+          className="absolute top-40 -left-16 h-64 w-64 rounded-full bg-[#FDFFE3]/90 blur-3xl float-soft"
+          style={{ animationDelay: '1.2s' }}
+        />
+        <div
+          className="absolute bottom-10 right-0 h-72 w-72 rounded-full bg-[#00612E]/6 blur-3xl float-soft"
+          style={{ animationDelay: '2s' }}
+        />
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
         <div className="mb-5 flex items-center justify-between gap-3 fade-up">
           <button
-            onClick={() => router.back()}
+            onClick={handleBack}
             className="inline-flex items-center gap-2 rounded-full border border-[#00612E]/10 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
           >
             ← Back
@@ -269,7 +314,7 @@ export default function ProductDetailPage() {
                   {product.category.replaceAll('_', ' ')}
                 </span>
                 <span className="rounded-full bg-[#FDFFE3] px-3 py-1 text-[11px] font-semibold text-[#8a6d1a]">
-                  {outOfStock ? 'Out of stock' : `${remainingStock} left`}
+                  {outOfStock ? 'Out of stock' : `${product.stock} left`}
                 </span>
                 {avgRating && (
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600">
@@ -279,9 +324,7 @@ export default function ProductDetailPage() {
               </div>
 
               <div className="mt-4">
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-                  {product.name}
-                </h1>
+                <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">{product.name}</h1>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   {product.description || 'Premium jersey with clean finishing and responsive sizing.'}
                 </p>
@@ -304,6 +347,7 @@ export default function ProductDetailPage() {
                     <p className="text-sm font-semibold text-slate-800">Select Size</p>
                     <p className="text-xs text-slate-400">Choose one before checkout</p>
                   </div>
+
                   <div className="flex flex-wrap gap-2">
                     {product.sizes.map((size) => (
                       <button
@@ -318,6 +362,36 @@ export default function ProductDetailPage() {
                         {size}
                       </button>
                     ))}
+                  </div>
+
+                  <div className="mt-6 rounded-[24px] border border-[#00612E]/10 bg-[#fafdf9] p-5">
+                    <p className="text-sm font-semibold text-slate-800">Size Guide</p>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {sizeGuide.map((item) => (
+                        <div
+                          key={item.size}
+                          className="rounded-2xl border border-[#00612E]/10 bg-white p-3 text-center shadow-sm transition hover:shadow-md"
+                        >
+                          <p className="text-base font-bold text-[#00612E]">{item.size}</p>
+                          <p className="mt-1 text-xs text-slate-500">{item.chest}</p>
+                          <p className="text-[11px] text-slate-400">{item.fit}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-[24px] border border-[#00612E]/10 bg-white p-5 shadow-sm">
+                    <p className="text-sm font-semibold text-slate-800">Quick Policies</p>
+
+                    <div className="mt-3 space-y-2 text-sm text-slate-600">
+                      {policyPoints.map((point) => (
+                        <div key={point} className="flex items-start gap-2">
+                          <span className="mt-1 h-2 w-2 rounded-full bg-[#00612E]" />
+                          <span>{point}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -355,9 +429,7 @@ export default function ProductDetailPage() {
               <p className="text-xs font-semibold uppercase tracking-[4px] text-[#00612E]/60">More from this category</p>
               <h2 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">You may also like</h2>
             </div>
-            <p className="hidden text-sm text-slate-500 sm:block">
-              Showing {relatedToShow.length} random picks for your screen size
-            </p>
+            <p className="hidden text-sm text-slate-500 sm:block">Showing {relatedToShow.length} random picks for your screen size</p>
           </div>
 
           {relatedToShow.length === 0 ? (
@@ -401,9 +473,7 @@ export default function ProductDetailPage() {
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[4px] text-[#00612E]/60">Customer voices</p>
-              <h2 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">
-                Reviews {reviews.length > 0 && `(${reviews.length})`}
-              </h2>
+              <h2 className="mt-2 text-xl font-bold text-slate-900 sm:text-2xl">Reviews {reviews.length > 0 && `(${reviews.length})`}</h2>
             </div>
           </div>
 
@@ -416,10 +486,8 @@ export default function ProductDetailPage() {
               {reviews.map((r) => (
                 <div key={r.id} className="rounded-[24px] border border-white/80 bg-white p-5 shadow-[0_14px_40px_rgba(0,0,0,0.05)]">
                   <div className="mb-2 flex items-center justify-between gap-3">
-                    <div className="text-yellow-400 text-sm">{'⭐'.repeat(r.rating)}</div>
-                    <span className="text-xs text-slate-400">
-                      {new Date(r.created_at).toLocaleDateString('en-BD')}
-                    </span>
+                    <div className="text-sm text-yellow-400">{'⭐'.repeat(r.rating)}</div>
+                    <span className="text-xs text-slate-400">{new Date(r.created_at).toLocaleDateString('en-BD')}</span>
                   </div>
                   <p className="text-sm leading-7 text-slate-700">{r.comment}</p>
                 </div>
