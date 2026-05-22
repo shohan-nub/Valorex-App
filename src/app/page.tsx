@@ -23,8 +23,11 @@ type Product = {
   id: string
   name: string
   price: number
+  original_price?: number | null
   image_url: string
   stock?: number | null
+  category?: string | null
+  categories?: string[] | null
 }
 
 const CATEGORIES: CategoryMeta[] = [
@@ -33,7 +36,7 @@ const CATEGORIES: CategoryMeta[] = [
     label: 'Top Pick',
     short: 'TP',
     title: 'Top Picks',
-    subtitle: 'Best sellers & editor\'s choice',
+    subtitle: "Best sellers & editor's choice",
   },
   {
     slug: 'club',
@@ -62,11 +65,12 @@ const PRODUCTS_PER_CATEGORY = 8
 
 async function getCategoryProducts(category: string): Promise<Product[]> {
   const supabase = createClient()
+
   const { data } = await supabase
     .from('products')
-    .select('id, name, price, image_url, stock')
-    .eq('category', category)
+    .select('id, name, price, original_price, image_url, stock, category, categories')
     .eq('is_active', true)
+    .or(`category.eq.${category},categories.cs.{${category}}`)
     .order('created_at', { ascending: false })
     .limit(PRODUCTS_PER_CATEGORY)
 
@@ -77,7 +81,7 @@ async function getNewestProduct(): Promise<Product | null> {
   const supabase = createClient()
   const { data } = await supabase
     .from('products')
-    .select('id, name, price, image_url, stock')
+    .select('id, name, price, original_price, image_url, stock, category, categories')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -105,8 +109,13 @@ export default async function HomePage() {
   ]
 
   const TICKER_WORDS = [
-    'EXCLUSIVE DROP', 'LIMITED EDITION', 'PREMIUM JERSEYS',
-    'FREE SHIPPING', 'NEW SEASON', 'WORLD CUP 26', 'RETRO CLASSICS',
+    'EXCLUSIVE DROP',
+    'LIMITED EDITION',
+    'PREMIUM JERSEYS',
+    'FREE SHIPPING',
+    'NEW SEASON',
+    'WORLD CUP 26',
+    'RETRO CLASSICS',
   ]
 
   return (
@@ -215,7 +224,9 @@ export default async function HomePage() {
                     className="group inline-flex items-center gap-2 rounded-full border border-[#00612E]/12 bg-white px-4 py-2 text-sm font-medium text-[#00612E] shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
                   >
                     See All
-                    <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
                   </Link>
                 </div>
               </div>
@@ -223,13 +234,18 @@ export default async function HomePage() {
               {cat.products.length === 0 ? (
                 <div className="rounded-[28px] border border-dashed border-[#00612E]/12 bg-white/60 py-14 flex flex-col items-center gap-3">
                   <div className="h-14 w-14 rounded-2xl border border-[#00612E]/10 bg-[#00612E]/5" />
-                  <p className="text-sm text-slate-500">এই category তে এখনো product নেই।</p>
+                  <p className="text-sm text-slate-500">
+                    এই category তে এখনো product নেই।
+                  </p>
                 </div>
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-5">
                     {cat.products.map((product) => (
-                      <div key={product.id} className="transition-transform duration-300 hover:-translate-y-1">
+                      <div
+                        key={product.id}
+                        className="transition-transform duration-300 hover:-translate-y-1"
+                      >
                         <ProductCard
                           product={{
                             ...product,
@@ -245,7 +261,9 @@ export default async function HomePage() {
                       className="inline-flex items-center gap-2 rounded-full border border-[#00612E]/14 bg-white px-7 py-3 text-sm font-medium text-[#0f172a] shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-[#00612E]/25 hover:shadow-md"
                     >
                       See More
-                      <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                      <span className="transition-transform duration-300 group-hover:translate-x-1">
+                        →
+                      </span>
                     </Link>
                   </div>
                 </>

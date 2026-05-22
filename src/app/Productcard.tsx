@@ -8,6 +8,7 @@ interface Product {
   id: string
   name: string
   price: number
+  original_price?: number | null
   image_url: string
   stock: number
 }
@@ -26,9 +27,14 @@ export default function ProductCard({ product }: { product: Product }) {
       },
       { threshold: 0.15 }
     )
+
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
   }, [])
+
+  const showOldPrice =
+    typeof product.original_price === 'number' &&
+    product.original_price > product.price
 
   return (
     <div
@@ -62,10 +68,11 @@ export default function ProductCard({ product }: { product: Product }) {
             </div>
           )}
 
-          {/* Out of stock overlay */}
           {product.stock === 0 && (
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-[20px]">
-              <span className="text-white text-xs font-medium tracking-widest uppercase">Out of Stock</span>
+              <span className="text-white text-xs font-medium tracking-widest uppercase">
+                Out of Stock
+              </span>
             </div>
           )}
         </div>
@@ -78,12 +85,24 @@ export default function ProductCard({ product }: { product: Product }) {
           >
             {product.name}
           </p>
-          <p
-            className="mt-1 text-stone-600 font-semibold"
-            style={{ fontSize: '0.95rem' }}
-          >
-            ৳{product.price.toLocaleString('en-BD')}
-          </p>
+
+          <div className="mt-1 flex items-end gap-2 flex-wrap">
+            <p
+              className="font-bold text-[#00612E]"
+              style={{ fontSize: '1.02rem' }}
+            >
+              ৳{product.price.toLocaleString('en-BD')}
+            </p>
+
+            {showOldPrice && (
+              <p
+                className="text-stone-400 line-through"
+                style={{ fontSize: '0.8rem' }}
+              >
+                ৳{product.original_price!.toLocaleString('en-BD')}
+              </p>
+            )}
+          </div>
         </div>
       </Link>
     </div>

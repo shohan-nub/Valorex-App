@@ -12,20 +12,31 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default async function CategoryPage({
   params,
 }: {
-  params: Promise<{ slug: string }>  // ← Promise করো
+  params: Promise<{ slug: string }>
 }) {
-  const { slug } = await params  // ← await করো
+  const { slug } = await params
 
   if (!CATEGORY_LABELS[slug]) notFound()
 
-  const supabase = await createClient()  // ← server client, await সহ
+  const supabase = await createClient()
 
-  const { data: products } = await supabase
+  const { data: products, error } = await supabase
     .from('products')
-    .select('id, name, price, image_url, stock')
-    .eq('category', slug)
+    .select('id, name, price, original_price, image_url, stock, category, categories')
     .eq('is_active', true)
+    .or(`category.eq.${slug},categories.cs.{${slug}}`)
     .order('created_at', { ascending: false })
+
+  if (error) {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">
+          {CATEGORY_LABELS[slug]}
+        </h1>
+        <p className="text-sm text-red-500">Failed to load products.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
@@ -38,7 +49,13 @@ export default async function CategoryPage({
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard
+              key={product.id}
+              product={{
+                ...product,
+                stock: product.stock ?? 0,
+              }}
+            />
           ))}
         </div>
       )}
