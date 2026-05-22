@@ -57,7 +57,7 @@ export default function HeroSection() {
       <section
         id="hero-section"
         className="relative w-full overflow-hidden flex flex-col"
-        style={{ minHeight: "100svh", background: "#5FAF7B" /* ← BG COLOR */ }}
+        style={{ minHeight: "100svh", background: "#006125" /* ← BG COLOR */ }}
       >
         {/* BG image — static, no animation */}
         <div className="absolute inset-0 z-0">
@@ -67,7 +67,7 @@ export default function HeroSection() {
 
         {/* Gradients */}
         <div className="absolute inset-0 z-[1] pointer-events-none"
-          style={{ background: "radial-gradient(ellipse 75% 75% at 45% 52%, rgba(245,247,0,0.11) 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(ellipse 75% 75% at 45% 52%, rgba(253, 253, 30, 0.26) 0%, transparent 70%)" }} />
         <div className="absolute inset-0 z-[1] pointer-events-none"
           style={{ background: "linear-gradient(to right, transparent 50%, rgba(0,0,0,0.18) 100%)" }} />
 

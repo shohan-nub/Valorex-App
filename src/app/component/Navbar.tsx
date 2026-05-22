@@ -109,9 +109,9 @@ export default function Navbar() {
           showNav ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0 pointer-events-none'
         }`}
         style={{
-          background: '#5FAF7B', /* ← navbar BG — hero এর color এর সাথে match করো */
+          background: '#006125', /* ← navbar BG — hero এর color এর সাথে match করো */
           backdropFilter: 'blur(18px)',
-          borderBottom: '1px solid rgba(253,255,227,0.10)',
+          borderBottom: '1px solid rgba(242, 255, 54, 0.17)',
           boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
         }}
       >
