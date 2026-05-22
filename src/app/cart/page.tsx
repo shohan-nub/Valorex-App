@@ -7,13 +7,17 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/app/lib/supabase/client'
 
-// realtime stock fetch করে cart item এর stock update করা
+type SleeveType = 'regular' | 'full'
+
 function useRealtimeStock() {
   const { items, updateQty } = useCart()
   const [stockMap, setStockMap] = useState<Record<string, number>>({})
 
   useEffect(() => {
     if (items.length === 0) return
+
+    let cancelled = false
+
     async function fetchStock() {
       const supabase = createClient()
       const ids = [...new Set(items.map(i => i.id))]
@@ -21,22 +25,31 @@ function useRealtimeStock() {
         .from('products')
         .select('id, stock')
         .in('id', ids)
-      if (!data) return
+
+      if (cancelled || !data) return
 
       const map: Record<string, number> = {}
-      data.forEach(p => { map[p.id] = p.stock })
+      data.forEach(p => {
+        map[p.id] = p.stock
+      })
+
       setStockMap(map)
 
-      // cart quantity যদি stock এর বেশি হয় → clamp করে দাও
+      // clamp qty if stock is exceeded
       items.forEach(item => {
         const realStock = map[item.id]
         if (realStock !== undefined && item.quantity > realStock) {
-          updateQty(item.id, item.size, Math.max(1, realStock))
+          updateQty(item.id, item.size, Math.max(1, realStock), item.sleeve)
         }
       })
     }
+
     fetchStock()
-  }, []) // mount এ একবার
+
+    return () => {
+      cancelled = true
+    }
+  }, [items, updateQty])
 
   return stockMap
 }
@@ -79,14 +92,15 @@ export default function CartPage() {
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-3">
           {items.map((item) => {
-            // realtime stock — fallback to item.stock
-            const realStock = stockMap[item.id] ?? (typeof item.stock === 'number' ? item.stock : Infinity)
+            const variantKey = `${item.id}-${item.size ?? 'nosize'}-${item.sleeve ?? 'regular'}`
+            const realStock =
+              stockMap[item.id] ?? (typeof item.stock === 'number' ? item.stock : Infinity)
             const isOutOfStock = realStock === 0
             const isMaxed = item.quantity >= realStock
 
             return (
               <div
-                key={`${item.id}-${item.size}`}
+                key={variantKey}
                 className={`flex gap-4 rounded-[22px] border bg-white p-4 shadow-[0_12px_35px_rgba(0,0,0,0.05)] ${
                   isOutOfStock ? 'border-red-200 opacity-70' : 'border-white/80'
                 }`}
@@ -103,19 +117,31 @@ export default function CartPage() {
 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-gray-800">{item.name}</p>
+
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                     {item.size && (
                       <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1">
                         Size: {item.size}
                       </span>
                     )}
-                    {/* stock warning */}
+
+                    {item.sleeve && (
+                      <span className="rounded-full border border-[#00612E]/10 bg-[#00612E]/5 px-2.5 py-1 font-medium text-[#00612E]">
+                        {item.sleeve === 'full' ? 'Full Sleeve' : 'Half Sleeve'}
+                      </span>
+                    )}
+
                     {isOutOfStock ? (
-                      <span className="rounded-full bg-red-100 px-2.5 py-1 text-red-600 font-medium">Out of stock</span>
+                      <span className="rounded-full bg-red-100 px-2.5 py-1 font-medium text-red-600">
+                        Out of stock
+                      </span>
                     ) : realStock <= 3 && realStock < Infinity ? (
-                      <span className="rounded-full bg-orange-100 px-2.5 py-1 text-orange-600 font-medium">Only {realStock} left!</span>
+                      <span className="rounded-full bg-orange-100 px-2.5 py-1 font-medium text-orange-600">
+                        Only {realStock} left!
+                      </span>
                     ) : null}
                   </div>
+
                   <p className="mt-2 text-sm font-bold text-[#00612E]">
                     ৳{item.price.toLocaleString('en-BD')}
                   </p>
@@ -123,7 +149,7 @@ export default function CartPage() {
 
                 <div className="flex flex-col items-end gap-3">
                   <button
-                    onClick={() => removeItem(item.id, item.size)}
+                    onClick={() => removeItem(item.id, item.size, item.sleeve)}
                     className="text-lg leading-none text-gray-300 transition hover:text-red-400"
                     aria-label="Remove item"
                   >
@@ -132,7 +158,14 @@ export default function CartPage() {
 
                   <div className="flex items-center overflow-hidden rounded-xl border border-gray-200 bg-white">
                     <button
-                      onClick={() => updateQty(item.id, item.size, Math.max(1, item.quantity - 1))}
+                      onClick={() =>
+                        updateQty(
+                          item.id,
+                          item.size,
+                          Math.max(1, item.quantity - 1),
+                          item.sleeve
+                        )
+                      }
                       className="px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100"
                     >
                       −
@@ -142,7 +175,14 @@ export default function CartPage() {
                     </span>
                     {!isMaxed ? (
                       <button
-                        onClick={() => updateQty(item.id, item.size, item.quantity + 1)}
+                        onClick={() =>
+                          updateQty(
+                            item.id,
+                            item.size,
+                            item.quantity + 1,
+                            item.sleeve
+                          )
+                        }
                         className="px-3 py-2 text-sm text-gray-500 transition hover:bg-gray-100"
                       >
                         +
@@ -157,10 +197,11 @@ export default function CartPage() {
           })}
         </div>
 
-        {/* Order summary */}
         <div className="h-fit rounded-[26px] border border-[#00612E]/10 bg-white p-5 shadow-[0_12px_35px_rgba(0,0,0,0.05)]">
           <div className="mb-4">
-            <p className="text-xs font-semibold uppercase tracking-[4px] text-[#00612E]/55">Order Summary</p>
+            <p className="text-xs font-semibold uppercase tracking-[4px] text-[#00612E]/55">
+              Order Summary
+            </p>
             <h2 className="mt-2 text-xl font-bold text-gray-900">Checkout Details</h2>
           </div>
 
@@ -182,9 +223,8 @@ export default function CartPage() {
             </div>
           </div>
 
-          {/* out of stock থাকলে checkout block */}
           {items.some(item => (stockMap[item.id] ?? Infinity) === 0) ? (
-            <div className="w-full rounded-2xl bg-red-50 border border-red-200 px-5 py-3 text-sm text-red-600 text-center font-medium">
+            <div className="w-full rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-center text-sm font-medium text-red-600">
               কিছু item out of stock — cart থেকে সরাও
             </div>
           ) : (
@@ -203,7 +243,10 @@ export default function CartPage() {
             Clear Cart
           </button>
 
-          <Link href="/" className="mt-3 block text-center text-xs text-gray-400 transition hover:text-[#00612E]">
+          <Link
+            href="/"
+            className="mt-3 block text-center text-xs text-gray-400 transition hover:text-[#00612E]"
+          >
             ← Continue Shopping
           </Link>
         </div>

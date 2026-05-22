@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { createClient } from '../../../app/lib/supabase/client'
 
+type SleeveType = 'regular' | 'full'
+
 interface OrderItem {
   id: string
   product_name: string
   product_image: string
-  size: string
+  size: string | null
+  sleeve?: SleeveType | null
   quantity: number
   price: number
 }
@@ -34,17 +37,28 @@ interface Order {
 const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
 
 const statusConfig: Record<string, { color: string; dot: string }> = {
-  pending:   { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', dot: 'bg-yellow-400' },
-  confirmed: { color: 'bg-blue-100 text-blue-700 border-blue-200',       dot: 'bg-blue-500' },
-  shipped:   { color: 'bg-indigo-100 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' },
-  delivered: { color: 'bg-green-100 text-green-700 border-green-200',    dot: 'bg-green-500' },
-  cancelled: { color: 'bg-red-100 text-red-700 border-red-200',          dot: 'bg-red-400' },
+  pending: { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', dot: 'bg-yellow-400' },
+  confirmed: { color: 'bg-blue-100 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
+  shipped: { color: 'bg-indigo-100 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' },
+  delivered: { color: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500' },
+  cancelled: { color: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-400' },
 }
 
 const paymentStatusConfig: Record<string, { color: string; label: string }> = {
-  unpaid:              { color: 'bg-gray-100 text-gray-600',       label: 'Unpaid' },
-  pending_verification:{ color: 'bg-orange-100 text-orange-700',   label: '⏳ Verifying' },
-  paid:                { color: 'bg-emerald-100 text-emerald-700', label: '✓ Paid' },
+  unpaid: { color: 'bg-gray-100 text-gray-600', label: 'Unpaid' },
+  pending_verification: { color: 'bg-orange-100 text-orange-700', label: '⏳ Verifying' },
+  paid: { color: 'bg-emerald-100 text-emerald-700', label: '✓ Paid' },
+}
+
+function normalizeSleeve(sleeve?: string | null): SleeveType | null {
+  if (!sleeve) return null
+  if (sleeve === 'full') return 'full'
+  if (sleeve === 'regular') return 'regular'
+  return null
+}
+
+function itemKey(item: OrderItem, index: number) {
+  return `${item.id}-${item.size ?? 'nosize'}-${item.sleeve ?? 'regular'}-${index}`
 }
 
 export default function OrdersPage() {
@@ -58,26 +72,42 @@ export default function OrdersPage() {
   }, [])
 
   async function fetchOrders() {
+    setLoading(true)
     const supabase = createClient()
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .select('*, order_items(*)')
       .order('created_at', { ascending: false })
 
-    setOrders(data || [])
+    if (error) {
+      alert(error.message)
+      setOrders([])
+      setLoading(false)
+      return
+    }
+
+    setOrders((data || []) as Order[])
     setLoading(false)
   }
 
   async function updateStatus(id: string, status: string) {
     const supabase = createClient()
-    await supabase.from('orders').update({ status }).eq('id', id)
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o))
+    const { error } = await supabase.from('orders').update({ status }).eq('id', id)
+    if (error) {
+      alert(error.message)
+      return
+    }
+    setOrders(prev => prev.map(o => (o.id === id ? { ...o, status } : o)))
   }
 
   async function updatePaymentStatus(id: string, payment_status: string) {
     const supabase = createClient()
-    await supabase.from('orders').update({ payment_status }).eq('id', id)
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, payment_status } : o))
+    const { error } = await supabase.from('orders').update({ payment_status }).eq('id', id)
+    if (error) {
+      alert(error.message)
+      return
+    }
+    setOrders(prev => prev.map(o => (o.id === id ? { ...o, payment_status } : o)))
   }
 
   async function deleteOrder(id: string) {
@@ -96,29 +126,32 @@ export default function OrdersPage() {
     if (expandedId === id) setExpandedId(null)
   }
 
-  const filtered = filterStatus === 'all'
-    ? orders
-    : orders.filter(o => o.status === filterStatus)
+  const filtered = filterStatus === 'all' ? orders : orders.filter(o => o.status === filterStatus)
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Loading...</div>
-  )
+  if (loading) {
+    return (
+      <div className="flex h-40 items-center justify-center text-sm text-gray-400">
+        Loading...
+      </div>
+    )
+  }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Orders</h2>
-          <p className="text-sm text-gray-400 mt-0.5">{orders.length} total orders</p>
+          <p className="mt-0.5 text-sm text-gray-400">{orders.length} total orders</p>
         </div>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-6 flex-wrap">
+      <div className="mb-6 flex flex-wrap gap-2">
         <button
           onClick={() => setFilterStatus('all')}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition border ${
-            filterStatus === 'all' ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+          className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+            filterStatus === 'all'
+              ? 'border-gray-800 bg-gray-800 text-white'
+              : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
           }`}
         >
           All ({orders.length})
@@ -127,8 +160,10 @@ export default function OrdersPage() {
           <button
             key={s}
             onClick={() => setFilterStatus(s)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition border ${
-              filterStatus === s ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium capitalize transition ${
+              filterStatus === s
+                ? 'border-gray-800 bg-gray-800 text-white'
+                : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
             }`}
           >
             {s} ({orders.filter(o => o.status === s).length})
@@ -137,7 +172,9 @@ export default function OrdersPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-xl p-16 text-center text-gray-400 shadow-sm">No orders found.</div>
+        <div className="rounded-xl bg-white p-16 text-center text-gray-400 shadow-sm">
+          No orders found.
+        </div>
       ) : (
         <div className="space-y-4">
           {filtered.map(order => {
@@ -149,16 +186,17 @@ export default function OrdersPage() {
             return (
               <div
                 key={order.id}
-                className={`bg-white rounded-2xl shadow-sm border overflow-hidden ${
+                className={`overflow-hidden rounded-2xl border bg-white shadow-sm ${
                   isBkash && order.bkash_trx_id ? 'border-pink-100' : 'border-gray-100'
                 }`}
               >
-                {/* bKash TRX ID — always visible at top if bKash order */}
                 {isBkash && order.bkash_trx_id && (
-                  <div className="bg-gradient-to-r from-pink-600 to-pink-500 px-6 py-3 flex items-center justify-between">
+                  <div className="flex items-center justify-between bg-gradient-to-r from-pink-600 to-pink-500 px-6 py-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-pink-200 text-xs font-semibold uppercase tracking-widest">bKash TRX ID</span>
-                      <span className="text-white text-xl font-bold font-mono tracking-widest">
+                      <span className="text-xs font-semibold uppercase tracking-widest text-pink-200">
+                        bKash TRX ID
+                      </span>
+                      <span className="font-mono text-xl font-bold tracking-widest text-white">
                         {order.bkash_trx_id}
                       </span>
                     </div>
@@ -166,7 +204,7 @@ export default function OrdersPage() {
                       <select
                         value={order.payment_status}
                         onChange={e => updatePaymentStatus(order.id, e.target.value)}
-                        className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 cursor-pointer focus:outline-none ${pc.color}`}
+                        className={`cursor-pointer rounded-full border-0 px-3 py-1.5 text-xs font-semibold focus:outline-none ${pc.color}`}
                       >
                         <option value="unpaid">Unpaid</option>
                         <option value="pending_verification">⏳ Verifying</option>
@@ -176,42 +214,46 @@ export default function OrdersPage() {
                   </div>
                 )}
 
-                {/* Card Header */}
                 <div className="px-6 py-4">
                   <div className="flex items-start gap-4">
-                    {/* Product thumbnails */}
-                    <div className="flex -space-x-3 flex-shrink-0 mt-1">
-                      {order.order_items?.slice(0, 3).map(item => (
-                        <div key={item.id} className="w-12 h-12 rounded-xl border-2 border-white overflow-hidden bg-gray-100 shadow-sm">
+                    <div className="mt-1 flex flex-shrink-0 -space-x-3">
+                      {order.order_items?.slice(0, 3).map((item, index) => (
+                        <div
+                          key={itemKey(item, index)}
+                          className="h-12 w-12 overflow-hidden rounded-xl border-2 border-white bg-gray-100 shadow-sm"
+                        >
                           {item.product_image ? (
                             <Image
                               src={item.product_image}
                               alt={item.product_name}
                               width={48}
                               height={48}
-                              className="w-full h-full object-cover"
+                              className="h-full w-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-300">📦</div>
+                            <div className="flex h-full w-full items-center justify-center text-gray-300">
+                              📦
+                            </div>
                           )}
                         </div>
                       ))}
                       {(order.order_items?.length || 0) > 3 && (
-                        <div className="w-12 h-12 rounded-xl border-2 border-white bg-gray-100 shadow-sm flex items-center justify-center text-xs font-semibold text-gray-500">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-white bg-gray-100 text-xs font-semibold text-gray-500 shadow-sm">
                           +{order.order_items.length - 3}
                         </div>
                       )}
                     </div>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-base font-bold text-gray-800">{order.customer_name || 'Unknown'}</span>
-                        <span className="text-xs font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-base font-bold text-gray-800">
+                          {order.customer_name || 'Unknown'}
+                        </span>
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 font-mono text-xs text-gray-400">
                           #{order.id.slice(0, 8).toUpperCase()}
                         </span>
                         <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                             isBkash ? 'bg-pink-100 text-pink-700' : 'bg-emerald-100 text-emerald-700'
                           }`}
                         >
@@ -221,31 +263,40 @@ export default function OrdersPage() {
 
                       <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
                         <span>📞 {order.phone || '—'}</span>
-                        <span>📍 {order.shipping_address}, {order.shipping_city}</span>
+                        <span>
+                          📍 {order.shipping_address}, {order.shipping_city}
+                        </span>
                       </div>
 
-                      {/* Items summary badges */}
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {order.order_items?.map(item => (
-                          <span key={item.id} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                            {item.product_name}{item.size ? ` (${item.size})` : ''} ×{item.quantity}
-                          </span>
-                        ))}
+                        {order.order_items?.map((item, index) => {
+                          const sleeve = normalizeSleeve(item.sleeve)
+                          return (
+                            <span
+                              key={itemKey(item, index)}
+                              className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                            >
+                              {item.product_name}
+                              {item.size ? ` (${item.size})` : ''}
+                              {sleeve ? ` • ${sleeve === 'full' ? 'Full Sleeve' : 'Half Sleeve'}` : ''}
+                              {' '}×{item.quantity}
+                            </span>
+                          )
+                        })}
                       </div>
                     </div>
 
-                    {/* Right: amount + status + date + delete */}
-                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    <div className="flex flex-shrink-0 flex-col items-end gap-2">
                       <span className="text-lg font-bold text-gray-800">
                         ৳{order.total_amount.toLocaleString('en-BD')}
                       </span>
 
-                      <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-medium ${sc.color}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
+                      <div className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${sc.color}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${sc.dot}`} />
                         <select
                           value={order.status}
                           onChange={e => updateStatus(order.id, e.target.value)}
-                          className="bg-transparent border-0 outline-none cursor-pointer capitalize font-medium"
+                          className="cursor-pointer border-0 bg-transparent font-medium outline-none"
                         >
                           {STATUSES.map(s => (
                             <option key={s} value={s} className="bg-white text-gray-800 capitalize">
@@ -265,7 +316,7 @@ export default function OrdersPage() {
 
                       <button
                         onClick={() => deleteOrder(order.id)}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-full bg-red-100 text-red-700 hover:bg-red-200 transition"
+                        className="rounded-full bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-200"
                       >
                         Delete
                       </button>
@@ -273,54 +324,88 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
-                {/* Expand toggle */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : order.id)}
-                  className="w-full flex items-center justify-center gap-1 py-2 text-xs text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition border-t border-gray-100"
+                  className="flex w-full items-center justify-center gap-1 border-t border-gray-100 py-2 text-xs text-gray-400 transition hover:bg-gray-50 hover:text-gray-600"
                 >
                   {isExpanded ? '▲ Hide details' : '▼ View item details'}
                 </button>
 
-                {/* Expanded */}
                 {isExpanded && (
-                  <div className="border-t border-gray-100 bg-gray-50 px-6 py-5 space-y-4">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Order Items</p>
+                  <div className="space-y-4 border-t border-gray-100 bg-gray-50 px-6 py-5">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      Order Items
+                    </p>
 
                     <div className="space-y-3">
-                      {order.order_items?.map(item => (
-                        <div key={item.id} className="flex items-center gap-4 bg-white rounded-xl px-4 py-3 border border-gray-100">
-                          <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
-                            {item.product_image ? (
-                              <Image
-                                src={item.product_image}
-                                alt={item.product_name}
-                                width={56}
-                                height={56}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-300 text-xl">📦</div>
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-800 text-sm">{item.product_name}</p>
-                            <div className="flex gap-3 mt-0.5 text-xs text-gray-500">
-                              <span>Size: <span className="font-medium text-gray-700">{item.size || '—'}</span></span>
-                              <span>Qty: <span className="font-medium text-gray-700">{item.quantity}</span></span>
-                              <span>Unit: <span className="font-medium text-gray-700">৳{item.price.toLocaleString('en-BD')}</span></span>
+                      {order.order_items?.map((item, index) => {
+                        const sleeve = normalizeSleeve(item.sleeve)
+                        return (
+                          <div
+                            key={itemKey(item, index)}
+                            className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white px-4 py-3"
+                          >
+                            <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+                              {item.product_image ? (
+                                <Image
+                                  src={item.product_image}
+                                  alt={item.product_name}
+                                  width={56}
+                                  height={56}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center text-xl text-gray-300">
+                                  📦
+                                </div>
+                              )}
                             </div>
-                          </div>
 
-                          <p className="text-sm font-bold text-gray-800 flex-shrink-0">
-                            ৳{(item.price * item.quantity).toLocaleString('en-BD')}
-                          </p>
-                        </div>
-                      ))}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-gray-800">
+                                {item.product_name}
+                              </p>
+                              <div className="mt-0.5 flex flex-wrap gap-3 text-xs text-gray-500">
+                                <span>
+                                  Size:{' '}
+                                  <span className="font-medium text-gray-700">
+                                    {item.size || '—'}
+                                  </span>
+                                </span>
+                                <span>
+                                  Sleeve:{' '}
+                                  <span className="font-medium text-gray-700">
+                                    {sleeve === 'full'
+                                      ? 'Full Sleeve'
+                                      : sleeve === 'regular'
+                                        ? 'Half Sleeve'
+                                        : '—'}
+                                  </span>
+                                </span>
+                                <span>
+                                  Qty:{' '}
+                                  <span className="font-medium text-gray-700">
+                                    {item.quantity}
+                                  </span>
+                                </span>
+                                <span>
+                                  Unit:{' '}
+                                  <span className="font-medium text-gray-700">
+                                    ৳{item.price.toLocaleString('en-BD')}
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+
+                            <p className="flex-shrink-0 text-sm font-bold text-gray-800">
+                              ৳{(item.price * item.quantity).toLocaleString('en-BD')}
+                            </p>
+                          </div>
+                        )
+                      })}
                     </div>
 
-                    {/* Bill breakdown */}
-                    <div className="bg-white rounded-xl border border-gray-100 px-4 py-3 space-y-1.5">
+                    <div className="space-y-1.5 rounded-xl border border-gray-100 bg-white px-4 py-3">
                       <div className="flex justify-between text-xs text-gray-500">
                         <span>Subtotal</span>
                         <span>৳{(order.subtotal || 0).toLocaleString('en-BD')}</span>
@@ -335,20 +420,19 @@ export default function OrdersPage() {
                           <span>৳{order.bkash_fee || 0}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-sm font-bold text-gray-800 border-t border-gray-100 pt-2">
+                      <div className="flex justify-between border-t border-gray-100 pt-2 text-sm font-bold text-gray-800">
                         <span>Total</span>
                         <span>৳{order.total_amount.toLocaleString('en-BD')}</span>
                       </div>
                     </div>
 
-                    {/* COD payment status */}
                     {!isBkash && (
                       <div className="flex items-center gap-3">
                         <p className="text-xs text-gray-500">Payment Status:</p>
                         <select
                           value={order.payment_status}
                           onChange={e => updatePaymentStatus(order.id, e.target.value)}
-                          className={`text-xs font-semibold px-3 py-1.5 rounded-full border-0 cursor-pointer focus:outline-none ${pc.color}`}
+                          className={`cursor-pointer rounded-full border-0 px-3 py-1.5 text-xs font-semibold focus:outline-none ${pc.color}`}
                         >
                           <option value="unpaid">Unpaid</option>
                           <option value="paid">✓ Paid</option>
