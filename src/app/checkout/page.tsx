@@ -13,6 +13,36 @@ type PaymentMethod = 'bkash' | 'cod'
 
 const STEPS: Step[] = ['info', 'payment', 'done']
 const STEP_LABELS = ['Delivery', 'Payment', 'Done']
+const ORDER_IDS_KEY = 'browser_order_ids'
+
+function loadBrowserOrderIds(): string[] {
+  if (typeof window === 'undefined') return []
+
+  try {
+    const raw = localStorage.getItem(ORDER_IDS_KEY)
+    if (!raw) return []
+
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+
+    return [...new Set(parsed.map((v) => String(v)).filter(Boolean))]
+  } catch {
+    return []
+  }
+}
+
+function saveBrowserOrderId(orderId: string) {
+  if (typeof window === 'undefined') return
+
+  try {
+    const current = loadBrowserOrderIds()
+    const merged = [orderId, ...current].filter(Boolean)
+    const unique = [...new Set(merged)].slice(0, 30)
+    localStorage.setItem(ORDER_IDS_KEY, JSON.stringify(unique))
+  } catch {
+    // ignore storage issues
+  }
+}
 
 function PageWrap({
   step,
@@ -24,7 +54,7 @@ function PageWrap({
   children: ReactNode
 }) {
   return (
-    <div className="min-h-screen overflow-hidden bg-[linear-gradient(180deg,#fbfcfa_0%,#f4f7f4_100%)] px-4 py-6 sm:px-6 lg:py-10">
+    <div className="relative min-h-[100svh] overflow-x-hidden bg-[linear-gradient(180deg,#fbfcfa_0%,#f4f7f4_100%)] px-3 py-4 sm:px-4 sm:py-6 lg:px-6 lg:py-10">
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(18px); }
@@ -40,14 +70,17 @@ function PageWrap({
       `}</style>
 
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-[#00612E]/10 blur-3xl float-soft" />
-        <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-[#FDFFE3]/80 blur-3xl float-soft" style={{ animationDelay: '1.2s' }} />
+        <div className="float-soft absolute -top-24 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[#00612E]/10 blur-3xl sm:h-80 sm:w-80" />
+        <div
+          className="float-soft absolute bottom-0 right-0 h-64 w-64 rounded-full bg-[#FDFFE3]/80 blur-3xl sm:h-72 sm:w-72"
+          style={{ animationDelay: '1.2s' }}
+        />
       </div>
 
-      <div className="relative mx-auto w-full max-w-6xl">
+      <div className="relative mx-auto w-full max-w-7xl">
         {step !== 'done' && (
-          <div className="mb-6 flex items-center justify-center">
-            <div className="flex items-center gap-2 rounded-full border border-white/80 bg-white/80 px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.05)] backdrop-blur sm:gap-3">
+          <div className="mb-5 flex items-center justify-center sm:mb-6">
+            <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2 gap-y-3 rounded-full border border-white/80 bg-white/80 px-3 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.05)] backdrop-blur sm:gap-x-3 sm:px-4 sm:py-3.5">
               {STEP_LABELS.map((label, i) => {
                 const active = i <= currentStepIndex
                 const done = i < currentStepIndex
@@ -65,7 +98,7 @@ function PageWrap({
                         {done ? '✓' : i + 1}
                       </div>
                       <span
-                        className="text-[10px] font-medium uppercase tracking-[3px]"
+                        className="text-[10px] font-medium uppercase tracking-[2px] sm:tracking-[3px]"
                         style={{ color: active ? '#00612E' : '#94a3b8' }}
                       >
                         {label}
@@ -74,7 +107,7 @@ function PageWrap({
 
                     {i < STEP_LABELS.length - 1 && (
                       <div
-                        className="mx-3 mb-4 h-0.5 w-10 rounded-full transition-all duration-500 sm:w-16"
+                        className="mx-2 mb-4 h-0.5 w-8 rounded-full transition-all duration-500 sm:mx-3 sm:w-14"
                         style={{ background: i < currentStepIndex ? '#00612E' : '#dbe4dd' }}
                       />
                     )}
@@ -103,10 +136,12 @@ function OrderSummary({
   total: number
 }) {
   return (
-    <div className="rounded-[26px] border border-[#00612E]/10 bg-white/90 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.05)] backdrop-blur sm:p-5">
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-[4px] text-[#00612E]/55">Order Summary</p>
-        <span className="rounded-full bg-[#00612E]/8 px-3 py-1 text-[11px] font-semibold text-[#00612E]">
+    <div className="rounded-[26px] border border-[#00612E]/10 bg-white/90 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.05)] backdrop-blur sm:p-5 lg:sticky lg:top-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[3px] text-[#00612E]/55 sm:tracking-[4px]">
+          Order Summary
+        </p>
+        <span className="shrink-0 rounded-full bg-[#00612E]/8 px-3 py-1 text-[11px] font-semibold text-[#00612E]">
           {items.length} item{items.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -114,14 +149,15 @@ function OrderSummary({
       <div className="space-y-3">
         {items.map((item) => (
           <div
-            key={`${item.id}-${item.size}`}
+            key={`${item.id}-${item.size ?? 'nosize'}-${item.sleeve ?? 'none'}`}
             className="flex items-center gap-3 rounded-2xl border border-[#edf2ed] bg-[#fafdfb] p-2.5"
           >
-            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-[#f3f6f3]">
+            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#f3f6f3]">
               <Image
                 src={item.image_url || '/placeholder.png'}
                 alt={item.name}
                 fill
+                sizes="56px"
                 className="object-cover"
               />
             </div>
@@ -134,13 +170,18 @@ function OrderSummary({
                     Size: {item.size}
                   </span>
                 )}
+                {item.sleeve && (
+                  <span className="rounded-full border border-[#00612E]/10 bg-[#00612E]/5 px-2 py-0.5 font-semibold text-[#00612E]">
+                    {item.sleeve === 'full' ? 'Full Sleeve' : 'Half Sleeve'}
+                  </span>
+                )}
                 <span className="rounded-full border border-[#e8efe8] bg-white px-2 py-0.5">
                   Qty: {item.quantity}
                 </span>
               </div>
             </div>
 
-            <p className="flex-shrink-0 text-sm font-bold text-[#00612E]">
+            <p className="shrink-0 text-sm font-bold text-[#00612E]">
               ৳{(item.price * item.quantity).toLocaleString('en-BD')}
             </p>
           </div>
@@ -148,15 +189,15 @@ function OrderSummary({
       </div>
 
       <div className="mt-4 space-y-2 border-t border-[#edf2ed] pt-4">
-        <div className="flex items-center justify-between text-sm text-slate-600">
+        <div className="flex items-center justify-between gap-4 text-sm text-slate-600">
           <span>Subtotal</span>
-          <span>৳{subtotal.toLocaleString('en-BD')}</span>
+          <span className="text-right">৳{subtotal.toLocaleString('en-BD')}</span>
         </div>
-        <div className="flex items-center justify-between text-sm text-slate-600">
+        <div className="flex items-center justify-between gap-4 text-sm text-slate-600">
           <span>Delivery</span>
-          <span>৳{deliveryCharge.toLocaleString('en-BD')}</span>
+          <span className="text-right">৳{deliveryCharge.toLocaleString('en-BD')}</span>
         </div>
-        <div className="flex items-center justify-between border-t border-[#edf2ed] pt-2">
+        <div className="flex items-center justify-between gap-4 border-t border-[#edf2ed] pt-2">
           <span className="text-sm font-medium text-slate-600">Total</span>
           <span className="text-xl font-black text-[#00612E]">৳{total.toLocaleString('en-BD')}</span>
         </div>
@@ -175,8 +216,9 @@ export default function CheckoutPage() {
   const [trxId, setTrxId] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [orderCompleted, setOrderCompleted] = useState(false)
   const redirectedRef = useRef(false)
-// charge setup
+
   const deliveryCharge = info.city?.trim()
     ? info.city.trim().toLowerCase() === 'dhaka'
       ? 80
@@ -184,8 +226,9 @@ export default function CheckoutPage() {
     : 0
 
   const finalTotal = totalPrice + deliveryCharge
+  const bkashFee = paymentMethod === 'bkash' ? Math.round(finalTotal * 0.018) : 0
   const currentStepIndex = useMemo(() => STEPS.indexOf(step), [step])
-  const shouldRedirect = hydrated && items.length === 0 && step !== 'done'
+  const shouldRedirect = hydrated && items.length === 0 && step !== 'done' && !orderCompleted
 
   useEffect(() => {
     if (shouldRedirect && !redirectedRef.current) {
@@ -201,7 +244,7 @@ export default function CheckoutPage() {
   if (!hydrated) return null
   if (shouldRedirect) return null
 
-async function handlePlaceOrder() {
+  async function handlePlaceOrder() {
     setError('')
 
     if (paymentMethod === 'bkash' && !trxId.trim()) {
@@ -217,34 +260,38 @@ async function handlePlaceOrder() {
         data: { user },
       } = await supabase.auth.getUser()
 
-      // ✅ আগে stock check করো
       for (const item of items) {
-        const { data: p } = await supabase
+        const { data: p, error: stockError } = await supabase
           .from('products')
           .select('stock')
           .eq('id', item.id)
           .single()
 
-        if (!p || p.stock < item.quantity) {
+        if (stockError || !p || p.stock < item.quantity) {
           setError(`"${item.name}" এর পর্যাপ্ত stock নেই।`)
           setLoading(false)
           return
         }
       }
 
+      const cleanPhone = info.phone.replace(/\D/g, '').trim()
+
       const { data: order, error: orderErr } = await supabase
         .from('orders')
         .insert({
           user_id: user?.id,
-          customer_name: info.name,
+          customer_name: info.name.trim(),
+          subtotal: totalPrice,
+          delivery_charge: deliveryCharge,
+          bkash_fee: bkashFee,
           total_amount: finalTotal,
           status: 'pending',
           payment_method: paymentMethod,
           payment_status: paymentMethod === 'cod' ? 'unpaid' : 'pending_verification',
           bkash_trx_id: paymentMethod === 'bkash' ? trxId.trim() : null,
-          shipping_address: info.address,
-          shipping_city: info.city,
-          phone: info.phone,
+          shipping_address: info.address.trim(),
+          shipping_city: info.city.trim(),
+          phone: cleanPhone,
         })
         .select()
         .single()
@@ -259,6 +306,7 @@ async function handlePlaceOrder() {
           product_name: item.name,
           product_image: item.image_url,
           size: item.size,
+          sleeve: item.sleeve ?? null,
           quantity: item.quantity,
           price: item.price,
         }))
@@ -266,7 +314,6 @@ async function handlePlaceOrder() {
 
       if (itemsErr) throw itemsErr
 
-    // stcok 
       for (const item of items) {
         await supabase.rpc('decrement_stock', {
           p_product_id: item.id,
@@ -274,8 +321,11 @@ async function handlePlaceOrder() {
         })
       }
 
+      saveBrowserOrderId(order.id)
+
+      setOrderCompleted(true)
+      setStep('done')
       clearCart()
-      setTimeout(() => setStep('done'), 80)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Order failed. Try again.')
     } finally {
@@ -290,14 +340,16 @@ async function handlePlaceOrder() {
     }
 
     setError('')
-    setTimeout(() => setStep('payment'), 120)
+    setTimeout(() => setStep('payment'), 100)
   }
 
   const heroSummary = (
     <div className="rounded-[26px] border border-[#00612E]/10 bg-white/90 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.05)] backdrop-blur sm:p-5">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[4px] text-[#00612E]/55">Checkout</p>
+          <p className="text-xs font-semibold uppercase tracking-[3px] text-[#00612E]/55 sm:tracking-[4px]">
+            Checkout
+          </p>
           <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
             Secure Checkout
           </h1>
@@ -315,9 +367,9 @@ async function handlePlaceOrder() {
   if (step === 'info') {
     return (
       <PageWrap step={step} currentStepIndex={currentStepIndex}>
-        <div className="mx-auto max-w-6xl">
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8">
-            <div className="space-y-5">
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)] lg:gap-8">
+            <div className="min-w-0 space-y-5">
               {heroSummary}
 
               <div className="rounded-[28px] border border-white/80 bg-white/90 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.05)] sm:p-6">
@@ -358,7 +410,7 @@ async function handlePlaceOrder() {
               </div>
             </div>
 
-            <div className="lg:sticky lg:top-6">
+            <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
               <OrderSummary
                 items={items}
                 subtotal={totalPrice}
@@ -375,16 +427,16 @@ async function handlePlaceOrder() {
   if (step === 'payment') {
     return (
       <PageWrap step={step} currentStepIndex={currentStepIndex}>
-        <div className="mx-auto max-w-6xl">
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8">
-            <div className="space-y-5">
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)] lg:gap-8">
+            <div className="min-w-0 space-y-5">
               {heroSummary}
 
               <div className="rounded-[28px] border border-white/80 bg-white/90 p-5 shadow-[0_18px_50px_rgba(0,0,0,0.05)] sm:p-6">
                 <h2 className="text-lg font-bold text-slate-900">Payment Method</h2>
                 <p className="mt-1 text-sm text-slate-500">Choose bKash or cash on delivery.</p>
 
-                <div className="mt-5 grid grid-cols-2 gap-3">
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   {[
                     { id: 'bkash', emoji: '📱', label: 'bKash', accent: '#E91E8C' },
                     { id: 'cod', emoji: '💵', label: 'Cash on Delivery', accent: '#22c55e' },
@@ -400,7 +452,7 @@ async function handlePlaceOrder() {
                           background: active ? `${accent}10` : '#fafdfb',
                         }}
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-3">
                           <span className="text-2xl">{emoji}</span>
                           <span
                             className="h-2.5 w-2.5 rounded-full"
@@ -415,21 +467,23 @@ async function handlePlaceOrder() {
 
                 {paymentMethod === 'bkash' && (
                   <div className="mt-5 rounded-[24px] border border-[#E91E8C]/20 bg-[#E91E8C]/5 p-4 sm:p-5">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <p className="text-base font-bold text-[#E91E8C]">bKash Send Money</p>
                         <p className="mt-1 text-xs text-slate-500">
                           Send the exact amount and copy the transaction ID.
                         </p>
                       </div>
-                      <div className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-[#E91E8C] shadow-sm">
+                      <div className="w-fit rounded-full bg-white px-3 py-1 text-[11px] font-semibold text-[#E91E8C] shadow-sm">
                         Secure pay
                       </div>
                     </div>
 
                     <div className="mt-4 rounded-2xl border border-white bg-white p-4">
                       <p className="text-xs font-semibold uppercase tracking-[3px] text-slate-400">Send to</p>
-                      <p className="mt-2 text-2xl font-black tracking-widest text-slate-900">{BKASH_NUMBER}</p>
+                      <p className="mt-2 text-2xl font-black tracking-widest text-slate-900 break-all">
+                        {BKASH_NUMBER}
+                      </p>
                     </div>
 
                     <ol className="mt-4 space-y-2 text-xs leading-6 text-slate-500">
@@ -471,9 +525,10 @@ async function handlePlaceOrder() {
                   className="mt-5 w-full rounded-2xl px-5 py-3 text-sm font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                   style={{
                     background: paymentMethod === 'bkash' ? '#E91E8C' : '#22c55e',
-                    boxShadow: paymentMethod === 'bkash'
-                      ? '0 12px 30px rgba(233,30,140,0.22)'
-                      : '0 12px 30px rgba(34,197,94,0.22)',
+                    boxShadow:
+                      paymentMethod === 'bkash'
+                        ? '0 12px 30px rgba(233,30,140,0.22)'
+                        : '0 12px 30px rgba(34,197,94,0.22)',
                   }}
                 >
                   {loading ? (
@@ -487,7 +542,7 @@ async function handlePlaceOrder() {
                 </button>
 
                 <button
-                  onClick={() => setTimeout(() => setStep('info'), 100)}
+                  onClick={() => setStep('info')}
                   className="mt-3 w-full text-xs font-medium text-slate-500 transition hover:text-slate-800"
                 >
                   ← Back to Delivery Info
@@ -495,7 +550,7 @@ async function handlePlaceOrder() {
               </div>
             </div>
 
-            <div className="lg:sticky lg:top-6">
+            <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
               <OrderSummary
                 items={items}
                 subtotal={totalPrice}
@@ -510,7 +565,7 @@ async function handlePlaceOrder() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#fbfcfa_0%,#f4f7f4_100%)] px-4 py-10">
+    <div className="flex min-h-[100svh] items-center justify-center bg-[linear-gradient(180deg,#fbfcfa_0%,#f4f7f4_100%)] px-4 py-10">
       <style>{`
         @keyframes pop {
           from { opacity: 0; transform: scale(0.94) translateY(8px); }

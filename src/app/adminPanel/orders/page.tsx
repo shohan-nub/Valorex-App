@@ -50,15 +50,14 @@ const paymentStatusConfig: Record<string, { color: string; label: string }> = {
   paid: { color: 'bg-emerald-100 text-emerald-700', label: '✓ Paid' },
 }
 
-function normalizeSleeve(sleeve?: string | null): SleeveType | null {
-  if (!sleeve) return null
-  if (sleeve === 'full') return 'full'
-  if (sleeve === 'regular') return 'regular'
+function formatSleeve(sleeve?: SleeveType | null) {
+  if (sleeve === 'full') return 'Full Sleeve'
+  if (sleeve === 'regular') return 'Half Sleeve'
   return null
 }
 
 function itemKey(item: OrderItem, index: number) {
-  return `${item.id}-${item.size ?? 'nosize'}-${item.sleeve ?? 'regular'}-${index}`
+  return `${item.id}-${item.size ?? 'nosize'}-${item.sleeve ?? 'nosleeve'}-${index}`
 }
 
 export default function OrdersPage() {
@@ -126,7 +125,10 @@ export default function OrdersPage() {
     if (expandedId === id) setExpandedId(null)
   }
 
-  const filtered = filterStatus === 'all' ? orders : orders.filter(o => o.status === filterStatus)
+  const filtered =
+    filterStatus === 'all'
+      ? orders
+      : orders.filter(o => o.status === filterStatus)
 
   if (loading) {
     return (
@@ -191,12 +193,12 @@ export default function OrdersPage() {
                 }`}
               >
                 {isBkash && order.bkash_trx_id && (
-                  <div className="flex items-center justify-between bg-gradient-to-r from-pink-600 to-pink-500 px-6 py-3">
+                  <div className="flex flex-col gap-3 bg-gradient-to-r from-pink-600 to-pink-500 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div className="flex items-center gap-3">
                       <span className="text-xs font-semibold uppercase tracking-widest text-pink-200">
                         bKash TRX ID
                       </span>
-                      <span className="font-mono text-xl font-bold tracking-widest text-white">
+                      <span className="font-mono text-lg font-bold tracking-widest text-white sm:text-xl">
                         {order.bkash_trx_id}
                       </span>
                     </div>
@@ -204,7 +206,7 @@ export default function OrdersPage() {
                       <select
                         value={order.payment_status}
                         onChange={e => updatePaymentStatus(order.id, e.target.value)}
-                        className={`cursor-pointer rounded-full border-0 px-3 py-1.5 text-xs font-semibold focus:outline-none ${pc.color}`}
+                        className={`w-full cursor-pointer rounded-full border-0 px-3 py-1.5 text-xs font-semibold focus:outline-none sm:w-auto ${pc.color}`}
                       >
                         <option value="unpaid">Unpaid</option>
                         <option value="pending_verification">⏳ Verifying</option>
@@ -214,9 +216,9 @@ export default function OrdersPage() {
                   </div>
                 )}
 
-                <div className="px-6 py-4">
-                  <div className="flex items-start gap-4">
-                    <div className="mt-1 flex flex-shrink-0 -space-x-3">
+                <div className="px-4 py-4 sm:px-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                    <div className="flex flex-shrink-0 -space-x-3">
                       {order.order_items?.slice(0, 3).map((item, index) => (
                         <div
                           key={itemKey(item, index)}
@@ -268,17 +270,22 @@ export default function OrdersPage() {
                         </span>
                       </div>
 
-                      <div className="mt-2 flex flex-wrap gap-1">
+                      <div className="mt-2 flex flex-wrap gap-2">
                         {order.order_items?.map((item, index) => {
-                          const sleeve = normalizeSleeve(item.sleeve)
+                          const sleeveLabel = formatSleeve(item.sleeve)
+
                           return (
                             <span
                               key={itemKey(item, index)}
-                              className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600"
+                              className="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-600"
                             >
                               {item.product_name}
                               {item.size ? ` (${item.size})` : ''}
-                              {sleeve ? ` • ${sleeve === 'full' ? 'Full Sleeve' : 'Half Sleeve'}` : ''}
+                              {sleeveLabel ? (
+                                <span className="ml-2 text-sm font-semibold text-[#00612E]">
+                                  • {sleeveLabel}
+                                </span>
+                              ) : null}
                               {' '}×{item.quantity}
                             </span>
                           )
@@ -286,12 +293,14 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-shrink-0 flex-col items-end gap-2">
+                    <div className="flex flex-shrink-0 flex-col items-start gap-2 sm:items-end">
                       <span className="text-lg font-bold text-gray-800">
                         ৳{order.total_amount.toLocaleString('en-BD')}
                       </span>
 
-                      <div className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${sc.color}`}>
+                      <div
+                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${sc.color}`}
+                      >
                         <span className={`h-1.5 w-1.5 rounded-full ${sc.dot}`} />
                         <select
                           value={order.status}
@@ -332,18 +341,19 @@ export default function OrdersPage() {
                 </button>
 
                 {isExpanded && (
-                  <div className="space-y-4 border-t border-gray-100 bg-gray-50 px-6 py-5">
+                  <div className="space-y-4 border-t border-gray-100 bg-gray-50 px-4 py-5 sm:px-6">
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
                       Order Items
                     </p>
 
                     <div className="space-y-3">
                       {order.order_items?.map((item, index) => {
-                        const sleeve = normalizeSleeve(item.sleeve)
+                        const sleeveLabel = formatSleeve(item.sleeve)
+
                         return (
                           <div
                             key={itemKey(item, index)}
-                            className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white px-4 py-3"
+                            className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 sm:flex-row sm:items-center"
                           >
                             <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
                               {item.product_image ? (
@@ -365,29 +375,28 @@ export default function OrdersPage() {
                               <p className="text-sm font-semibold text-gray-800">
                                 {item.product_name}
                               </p>
-                              <div className="mt-0.5 flex flex-wrap gap-3 text-xs text-gray-500">
+
+                              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
                                 <span>
                                   Size:{' '}
                                   <span className="font-medium text-gray-700">
                                     {item.size || '—'}
                                   </span>
                                 </span>
-                                <span>
-                                  Sleeve:{' '}
-                                  <span className="font-medium text-gray-700">
-                                    {sleeve === 'full'
-                                      ? 'Full Sleeve'
-                                      : sleeve === 'regular'
-                                        ? 'Half Sleeve'
-                                        : '—'}
+
+                                {sleeveLabel ? (
+                                  <span className="rounded-full bg-[#00612E]/8 px-2.5 py-1 text-sm font-semibold text-[#00612E]">
+                                    Sleeve: {sleeveLabel}
                                   </span>
-                                </span>
+                                ) : null}
+
                                 <span>
                                   Qty:{' '}
                                   <span className="font-medium text-gray-700">
                                     {item.quantity}
                                   </span>
                                 </span>
+
                                 <span>
                                   Unit:{' '}
                                   <span className="font-medium text-gray-700">
@@ -397,7 +406,7 @@ export default function OrdersPage() {
                               </div>
                             </div>
 
-                            <p className="flex-shrink-0 text-sm font-bold text-gray-800">
+                            <p className="self-end text-sm font-bold text-gray-800 sm:self-auto">
                               ৳{(item.price * item.quantity).toLocaleString('en-BD')}
                             </p>
                           </div>

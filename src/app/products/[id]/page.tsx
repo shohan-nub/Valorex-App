@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useCart } from '../../Cartcontext'
 import { createClient } from '@/app/lib/supabase/client'
 import ReviewSection from '@/app/ReviewSection'
+
+type SleeveType = 'regular' | 'full'
 
 interface ProductData {
   id: string
@@ -46,8 +48,6 @@ interface RelatedProduct {
   categories?: string[] | null
 }
 
-type SleeveType = 'regular' | 'full'
-
 const FALLBACK = '/placeholder.png'
 
 function shuffle<T>(arr: T[]): T[] {
@@ -67,22 +67,55 @@ function normalizeImages(primary?: string | null, extras?: string[] | null): str
   return [...new Set(cleaned)]
 }
 
-function renderFormattedText(text: string) {
-  const tokens = text.split(/(\*\*[\s\S]+?\*\*|_[\s\S]+?_|\n)/g)
+function renderFormattedText(text: string): ReactNode[] {
+  const out: ReactNode[] = []
+  const lines = text.split('\n')
+  let key = 0
 
-  return tokens.map((token, idx) => {
-    if (token === '\n') return <br key={idx} />
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li]
+    let i = 0
+    let buffer = ''
 
-    if (/^\*\*[\s\S]+?\*\*$/.test(token)) {
-      return <strong key={idx}>{token.slice(2, -2)}</strong>
+    const pushBuffer = () => {
+      if (!buffer) return
+      out.push(<span key={`t-${key++}`}>{buffer}</span>)
+      buffer = ''
     }
 
-    if (/^_[\s\S]+?_$/ .test(token)) {
-      return <em key={idx}>{token.slice(1, -1)}</em>
+    while (i < line.length) {
+      if (line.startsWith('**', i)) {
+        const close = line.indexOf('**', i + 2)
+        if (close !== -1 && close > i + 2) {
+          pushBuffer()
+          out.push(<strong key={`b-${key++}`}>{line.slice(i + 2, close)}</strong>)
+          i = close + 2
+          continue
+        }
+      }
+
+      if (line[i] === '_') {
+        const close = line.indexOf('_', i + 1)
+        if (close !== -1 && close > i + 1) {
+          pushBuffer()
+          out.push(<em key={`i-${key++}`}>{line.slice(i + 1, close)}</em>)
+          i = close + 1
+          continue
+        }
+      }
+
+      buffer += line[i]
+      i += 1
     }
 
-    return <span key={idx}>{token}</span>
-  })
+    pushBuffer()
+
+    if (li < lines.length - 1) {
+      out.push(<br key={`br-${key++}`} />)
+    }
+  }
+
+  return out
 }
 
 function SectionCard({
@@ -97,12 +130,12 @@ function SectionCard({
   return (
     <div className="rounded-2xl border border-[#00612E]/10 bg-[#fafdf9] p-4">
       {title && (
-        <p className="text-[11px] font-semibold uppercase tracking-[3px] text-[#00612E]/60 mb-2">
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[3px] text-[#00612E]/60">
           {title}
         </p>
       )}
       {body && (
-        <div className="text-sm leading-7 text-slate-600 whitespace-pre-line break-words">
+        <div className="break-words whitespace-pre-line text-sm leading-7 text-slate-600">
           {renderFormattedText(body)}
         </div>
       )}
@@ -235,9 +268,9 @@ export default function ProductDetailPage() {
   }, [product])
 
   const sleeveExtra = Number(product?.full_sleeve_extra_price ?? 0)
+  const hasSleeveOpt = sleeveExtra > 0
   const finalPrice = (product?.price ?? 0) + (sleeve === 'full' ? sleeveExtra : 0)
   const outOfStock = !product || product.stock <= 0
-  const hasSleeveOpt = sleeveExtra > 0
 
   const avgRating = useMemo(() => {
     if (!reviews.length) return null
@@ -254,14 +287,15 @@ export default function ProductDetailPage() {
     if (product.sizes?.length && !selectedSize) return alert('Please select a size')
     if (product.stock <= 0) return alert('Out of stock')
 
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: finalPrice,
-      image_url: product.image_url || FALLBACK,
-      size: selectedSize,
-      quantity: 1,
-    } as any)
+   addItem({
+  id: product.id,
+  name: product.name,
+  price: finalPrice,
+  image_url: product.image_url || FALLBACK,
+  size: selectedSize,
+  sleeve: hasSleeveOpt ? sleeve : null,
+  quantity: 1,
+} as any)
 
     router.push(route)
   }
@@ -273,7 +307,7 @@ export default function ProductDetailPage() {
         style={{ background: 'linear-gradient(180deg,#fbfcfa,#f6f8f5)' }}
       >
         <div className="mx-auto max-w-7xl">
-          <div className="h-8 w-24 animate-pulse rounded-full bg-slate-100 mb-6" />
+          <div className="mb-6 h-8 w-24 animate-pulse rounded-full bg-slate-100" />
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="aspect-square animate-pulse rounded-3xl bg-slate-100" />
             <div className="space-y-4">
@@ -289,9 +323,9 @@ export default function ProductDetailPage() {
 
   if (error || !product) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="rounded-3xl border border-[#00612E]/10 bg-white p-8 text-center shadow-sm max-w-sm w-full">
-          <p className="text-sm text-slate-500 mb-4">{error ?? 'Product not found.'}</p>
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="max-w-sm w-full rounded-3xl border border-[#00612E]/10 bg-white p-8 text-center shadow-sm">
+          <p className="mb-4 text-sm text-slate-500">{error ?? 'Product not found.'}</p>
           <Link
             href="/"
             className="inline-flex rounded-full bg-[#00612E] px-5 py-2.5 text-sm font-semibold text-white"
@@ -315,10 +349,10 @@ export default function ProductDetailPage() {
         .float { animation: floatY 7s ease-in-out infinite }
       `}</style>
 
-      <div className="pointer-events-none absolute inset-0 overflow-hidden -z-10">
-        <div className="float absolute -top-20 left-1/2 -translate-x-1/2 h-72 w-72 rounded-full bg-[#00612E]/8 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="float absolute -top-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-[#00612E]/8 blur-3xl" />
         <div
-          className="float absolute top-40 -left-10 h-56 w-56 rounded-full bg-[#FDFFE3]/60 blur-3xl"
+          className="float absolute -left-10 top-40 h-56 w-56 rounded-full bg-[#FDFFE3]/60 blur-3xl"
           style={{ animationDelay: '1s' }}
         />
         <div
@@ -328,10 +362,10 @@ export default function ProductDetailPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
-        <div className="fu mb-5 flex items-center justify-between gap-3 flex-wrap">
+        <div className="fu mb-5 flex flex-wrap items-center justify-between gap-3">
           <button
             onClick={() => (window.history.length > 1 ? router.back() : router.push('/'))}
-            className="inline-flex items-center gap-2 rounded-full border border-[#00612E]/10 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:-translate-y-0.5 hover:shadow-md transition-all"
+            className="inline-flex items-center gap-2 rounded-full border border-[#00612E]/10 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
           >
             ← Back
           </button>
@@ -342,7 +376,7 @@ export default function ProductDetailPage() {
 
         <div className="grid gap-5 lg:grid-cols-2 lg:gap-8 xl:grid-cols-[1.1fr_0.9fr]">
           <section className="fu min-w-0">
-            <div className="rounded-3xl border border-white/80 bg-white shadow-[0_16px_60px_rgba(0,0,0,0.06)] overflow-hidden">
+            <div className="overflow-hidden rounded-3xl border border-white/80 bg-white shadow-[0_16px_60px_rgba(0,0,0,0.06)]">
               <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1/1' }}>
                 {!imgLoaded && <div className="absolute inset-0 animate-pulse bg-slate-100" />}
 
@@ -372,20 +406,13 @@ export default function ProductDetailPage() {
                         setActiveImg(img)
                         setImgLoaded(false)
                       }}
-                      className={`relative h-16 w-16 sm:h-18 sm:w-18 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all duration-200 ${
+                      className={`relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all duration-200 sm:h-18 sm:w-18 ${
                         activeImg === img
                           ? 'border-[#00612E] scale-105 shadow-md'
                           : 'border-slate-200 hover:border-[#00612E]/40'
                       }`}
                     >
-                      <Image
-                        src={img}
-                        alt=""
-                        fill
-                        unoptimized
-                        sizes="64px"
-                        className="object-cover"
-                      />
+                      <Image src={img} alt="" fill unoptimized sizes="64px" className="object-cover" />
                     </button>
                   ))}
                 </div>
@@ -395,7 +422,7 @@ export default function ProductDetailPage() {
 
           <section className="fu min-w-0 lg:sticky lg:top-4 lg:self-start">
             <div className="rounded-3xl border border-white/80 bg-white/90 p-4 shadow-[0_16px_60px_rgba(0,0,0,0.06)] backdrop-blur sm:p-6">
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="mb-4 flex flex-wrap gap-2">
                 <span className="rounded-full bg-[#00612E]/8 px-3 py-1 text-[11px] font-semibold text-[#00612E]">
                   {product.category.replaceAll('_', ' ')}
                 </span>
@@ -418,7 +445,7 @@ export default function ProductDetailPage() {
               </h1>
 
               {product.description && (
-                <p className="mt-2 text-sm leading-6 text-slate-500 break-words">
+                <p className="mt-2 break-words text-sm leading-6 text-slate-500">
                   {product.description}
                 </p>
               )}
@@ -432,13 +459,13 @@ export default function ProductDetailPage() {
                     <p className="mt-1 text-3xl font-black text-[#00612E]">৳{finalPrice}</p>
 
                     {product.original_price && product.original_price > product.price && (
-                      <p className="text-xs text-slate-400 mt-0.5 line-through">
+                      <p className="mt-0.5 text-xs text-slate-400 line-through">
                         ৳{product.original_price}
                       </p>
                     )}
 
                     {hasSleeveOpt && sleeve === 'full' && (
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="mt-0.5 text-xs text-slate-400">
                         Base ৳{product.price} + Full sleeve ৳{sleeveExtra}
                       </p>
                     )}
@@ -455,7 +482,7 @@ export default function ProductDetailPage() {
 
               {hasSleeveOpt && (
                 <div className="mt-4 rounded-2xl border border-[#00612E]/10 bg-[#fafdf9] p-4">
-                  <p className="text-sm font-semibold text-slate-800 mb-3">Sleeve Option</p>
+                  <p className="mb-3 text-sm font-semibold text-slate-800">Sleeve Option</p>
                   <div className="grid grid-cols-2 gap-2">
                     {(['regular', 'full'] as SleeveType[]).map(s => (
                       <button
@@ -469,7 +496,7 @@ export default function ProductDetailPage() {
                         }`}
                       >
                         {s === 'regular' ? 'Regular' : 'Full Sleeve'}
-                        <span className="block text-xs opacity-75 mt-0.5">
+                        <span className="mt-0.5 block text-xs opacity-75">
                           {s === 'regular' ? 'No extra charge' : `+৳${sleeveExtra}`}
                         </span>
                       </button>
@@ -480,7 +507,7 @@ export default function ProductDetailPage() {
 
               {!!product.sizes?.length && (
                 <div className="mt-4">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="mb-3 flex items-center justify-between">
                     <p className="text-sm font-semibold text-slate-800">Select Size</p>
                     <p className="text-xs text-slate-400">Required</p>
                   </div>
@@ -503,12 +530,15 @@ export default function ProductDetailPage() {
                   </div>
 
                   <div className="mt-4 rounded-2xl border border-[#00612E]/10 bg-[#fafdf9] p-4">
-                    <p className="text-sm font-semibold text-slate-800 mb-3">Size Guide</p>
+                    <p className="mb-3 text-sm font-semibold text-slate-800">Size Guide</p>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                       {SIZE_GUIDE.map(g => (
-                        <div key={g.size} className="rounded-xl border border-[#00612E]/10 bg-white p-2.5 text-center shadow-sm">
+                        <div
+                          key={g.size}
+                          className="rounded-xl border border-[#00612E]/10 bg-white p-2.5 text-center shadow-sm"
+                        >
                           <p className="text-sm font-bold text-[#00612E]">{g.size}</p>
-                          <p className="text-[11px] text-slate-500 mt-0.5">{g.chest}</p>
+                          <p className="mt-0.5 text-[11px] text-slate-500">{g.chest}</p>
                           <p className="text-[10px] text-slate-400">{g.fit}</p>
                         </div>
                       ))}
@@ -522,7 +552,7 @@ export default function ProductDetailPage() {
                   type="button"
                   onClick={() => handleCTA('/cart')}
                   disabled={outOfStock}
-                  className="rounded-full border border-[#00612E] bg-white py-3 text-sm font-semibold text-[#00612E] transition hover:-translate-y-0.5 hover:bg-[#00612E]/5 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="rounded-full border border-[#00612E] bg-white py-3 text-sm font-semibold text-[#00612E] transition hover:-translate-y-0.5 hover:bg-[#00612E]/5 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Add to Cart
                 </button>
@@ -530,14 +560,14 @@ export default function ProductDetailPage() {
                   type="button"
                   onClick={() => handleCTA('/checkout')}
                   disabled={outOfStock}
-                  className="rounded-full bg-[#00612E] py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="rounded-full bg-[#00612E] py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Buy Now
                 </button>
               </div>
 
               <div className="mt-4 rounded-2xl border border-[#00612E]/10 bg-white p-4 shadow-sm">
-                <p className="text-sm font-semibold text-slate-800 mb-2">Policies</p>
+                <p className="mb-2 text-sm font-semibold text-slate-800">Policies</p>
                 <ul className="space-y-1.5">
                   {POLICIES.map(p => (
                     <li key={p} className="flex items-start gap-2 text-sm text-slate-600">
@@ -566,10 +596,10 @@ export default function ProductDetailPage() {
 
         {related.length > 0 && (
           <section className="fu mt-10">
-            <p className="text-[11px] font-semibold uppercase tracking-[4px] text-[#00612E]/60 mb-1">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[4px] text-[#00612E]/60">
               More from this category
             </p>
-            <h2 className="text-xl font-bold text-slate-900 mb-4 sm:text-2xl">You may also like</h2>
+            <h2 className="mb-4 text-xl font-bold text-slate-900 sm:text-2xl">You may also like</h2>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8">
               {related.slice(0, relatedCount).map((item, i) => (
@@ -590,7 +620,7 @@ export default function ProductDetailPage() {
                     />
                   </div>
                   <div className="p-3">
-                    <p className="line-clamp-2 text-sm font-semibold text-slate-900 break-words">
+                    <p className="line-clamp-2 break-words text-sm font-semibold text-slate-900">
                       {item.name}
                     </p>
                     <div className="mt-1.5 flex items-center justify-between gap-2">

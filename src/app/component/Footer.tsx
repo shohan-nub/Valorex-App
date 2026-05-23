@@ -14,12 +14,12 @@ const navLinks = [
 const socials = [
   {
     label: "Facebook",
-    href:  "https://www.facebook.com/share/1ZiA4jG1go/",
+    href:  "https://www.facebook.com/share/1KzYk7RGfj/",
     icon:  "/facebook.png",
   },
   {
     label: "Instagram",
-    href:  "https://www.instagram.com/valorex_offficial?igsh=MXZkY284d2kxOXEw",
+    href:  "https://www.instagram.com/valorex_bd?igsh=cGtubW9wZmY2d2M0",
     icon:  "/instagram.png",
   },
 ];
