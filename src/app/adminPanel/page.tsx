@@ -11,6 +11,9 @@ interface Stats {
   totalUsers: number
   pendingOrders: number
   pendingRevenue: number
+  todayRevenue: number
+  weekRevenue: number
+  monthRevenue: number
 }
 
 interface Order {
@@ -31,6 +34,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats>({
     totalProducts: 0, totalOrders: 0, totalUsers: 0,
     pendingOrders: 0, pendingRevenue: 0,
+    todayRevenue: 0, weekRevenue: 0, monthRevenue: 0,
   })
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
   const [reviewImages, setReviewImages] = useState<ReviewImage[]>([])
@@ -39,7 +43,23 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchData() {
       const supabase = createClient()
-      const [products, orders, users, pendingData, recent, reviews] = await Promise.all([
+
+      const now = new Date()
+
+      const todayStart = new Date(now)
+      todayStart.setHours(0, 0, 0, 0)
+
+      const weekStart = new Date(now)
+      weekStart.setDate(now.getDate() - 7)
+
+      const monthStart = new Date(now)
+      monthStart.setDate(1)
+      monthStart.setHours(0, 0, 0, 0)
+
+      const [
+        products, orders, users, pendingData, recent, reviews,
+        todayOrders, weekOrders, monthOrders,
+      ] = await Promise.all([
         supabase.from('products').select('id', { count: 'exact', head: true }),
         supabase.from('orders').select('id', { count: 'exact', head: true }),
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
@@ -47,14 +67,33 @@ export default function AdminDashboard() {
         supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(5),
         supabase.from('review_images').select('id, image_url, caption, is_active')
           .order('created_at', { ascending: false }).limit(6),
+       supabase.from('orders').select('total_amount')
+  .eq('status', 'delivered')
+  .gte('created_at', todayStart.toISOString()),
+
+supabase.from('orders').select('total_amount')
+  .eq('status', 'delivered')
+  .gte('created_at', weekStart.toISOString()),
+
+supabase.from('orders').select('total_amount')
+  .eq('status', 'delivered')
+  .gte('created_at', monthStart.toISOString()),
       ])
+
       const pendingRevenue = (pendingData.data || []).reduce((s, o) => s + (o.total_amount || 0), 0)
+      const todayRevenue = (todayOrders.data || []).reduce((s, o) => s + (o.total_amount || 0), 0)
+      const weekRevenue = (weekOrders.data || []).reduce((s, o) => s + (o.total_amount || 0), 0)
+      const monthRevenue = (monthOrders.data || []).reduce((s, o) => s + (o.total_amount || 0), 0)
+
       setStats({
         totalProducts: products.count || 0,
         totalOrders: orders.count || 0,
         totalUsers: users.count || 0,
         pendingOrders: pendingData.data?.length || 0,
         pendingRevenue,
+        todayRevenue,
+        weekRevenue,
+        monthRevenue,
       })
       setRecentOrders(recent.data || [])
       setReviewImages((reviews.data as ReviewImage[]) || [])
@@ -69,6 +108,12 @@ export default function AdminDashboard() {
     { label: 'Users',        value: stats.totalUsers,    icon: '👤', accent: '#6d28d9', light: 'rgba(109,40,217,0.10)' },
     { label: 'Pending',      value: stats.pendingOrders, icon: '⏳', accent: '#d97706', light: 'rgba(217,119,6,0.10)',
       sub: `৳${stats.pendingRevenue.toLocaleString('en-BD')} pending` },
+  ]
+
+  const revenueCards = [
+    { label: 'আজকের Revenue', value: stats.todayRevenue, icon: '📅', accent: '#00612E', light: 'rgba(0,97,46,0.08)' },
+    { label: 'এই সপ্তাহে',    value: stats.weekRevenue,  icon: '📊', accent: '#0f6cbd', light: 'rgba(15,108,189,0.08)' },
+    { label: 'এই মাসে',       value: stats.monthRevenue, icon: '💰', accent: '#6d28d9', light: 'rgba(109,40,217,0.08)' },
   ]
 
   const statusStyle: Record<string, { bg: string; color: string }> = {
@@ -128,6 +173,23 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {/* ── REVENUE CARDS ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {revenueCards.map(card => (
+          <div key={card.label} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3" style={{ background: card.light }}>
+              {card.icon}
+            </div>
+            <p className="text-2xl font-bold text-gray-900">
+              ৳{card.value.toLocaleString('en-BD')}
+            </p>
+            <p className="text-sm font-medium mt-0.5" style={{ color: card.accent }}>
+              {card.label}
+            </p>
+          </div>
+        ))}
+      </div>
+
       {/* ── QUICK ACTIONS ── */}
       <div className="flex flex-wrap gap-3">
         {[
@@ -162,7 +224,7 @@ export default function AdminDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(0,97,46,0.06)' }}>
-                    {['ID', 'Amount', 'Status', 'Date'].map(h => (
+                    {['ID', 'Amount', 'Status', 'Date & Time'].map(h => (
                       <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -170,6 +232,7 @@ export default function AdminDashboard() {
                 <tbody>
                   {recentOrders.map(order => {
                     const s = statusStyle[order.status] || { bg: '#f3f4f6', color: '#374151' }
+                    const date = new Date(order.created_at)
                     return (
                       <tr key={order.id} className="hover:bg-[#00612E]/[0.02] transition-colors" style={{ borderBottom: '1px solid rgba(0,97,46,0.04)' }}>
                         <td className="px-5 py-3.5 font-mono text-xs text-gray-400">#{order.id.slice(0, 8)}</td>
@@ -179,7 +242,13 @@ export default function AdminDashboard() {
                             {order.status}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 text-xs text-gray-400">{new Date(order.created_at).toLocaleDateString('en-BD')}</td>
+                        <td className="px-5 py-3.5 text-xs text-gray-400">
+                          {date.toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {' '}
+                          <span className="text-gray-500 font-medium">
+                            {date.toLocaleTimeString('en-BD', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </span>
+                        </td>
                       </tr>
                     )
                   })}

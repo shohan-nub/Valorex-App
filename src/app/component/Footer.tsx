@@ -182,11 +182,11 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="ft-card">
                 <p className="text-[10px] uppercase font-semibold mb-1" style={{color:C.textSoft,letterSpacing:'0.28em'}}>Address</p>
-                <p className="text-sm leading-5" style={{color:C.text}}>House-14, Road-5, Sector-11, Uttara, Dhaka-1230</p>
+                <p className="text-sm leading-5" style={{color:C.text}}>Sector 4, Azompur, Uttara, Dhaka-1230</p>
               </div>
               <div className="ft-card">
                 <p className="text-[10px] uppercase font-semibold mb-1" style={{color:C.textSoft,letterSpacing:'0.28em'}}>Phone</p>
-                <a href="tel:01328388457" className="text-sm font-medium hover:underline" style={{color:C.text}}>01328388457</a>
+                <a href="tel:01829397320" className="text-sm font-medium hover:underline" style={{color:C.text}}>+8801829397320</a>
               </div>
               <div className="ft-card">
                 <p className="text-[10px] uppercase font-semibold mb-1" style={{color:C.textSoft,letterSpacing:'0.28em'}}>Email</p>

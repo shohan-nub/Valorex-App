@@ -321,11 +321,37 @@ export default function CheckoutPage() {
         })
       }
 
-      saveBrowserOrderId(order.id)
+     saveBrowserOrderId(order.id)
 
-      setOrderCompleted(true)
-      setStep('done')
-      clearCart()
+if (typeof window !== "undefined" && (window as any).fbq) {
+  (window as any).fbq("track", "Purchase", {
+    value: finalTotal,
+    currency: "BDT",
+    eventID: order.id,
+  });
+}
+
+await fetch("/api/meta/purchase", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    orderId: order.id,
+    value: finalTotal,
+    phone: cleanPhone,
+    products: items.map((item) => item.id),
+    numItems: items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    ),
+  }),
+});
+
+setOrderCompleted(true)
+setStep('done')
+clearCart()
+
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Order failed. Try again.')
     } finally {
@@ -333,15 +359,23 @@ export default function CheckoutPage() {
     }
   }
 
-  function goToPayment() {
-    if (!info.name || !info.phone || !info.address || !info.city) {
-      setError('Please fill in all fields.')
-      return
-    }
-
-    setError('')
-    setTimeout(() => setStep('payment'), 100)
+function goToPayment() {
+  if (!info.name || !info.phone || !info.address || !info.city) {
+    setError('Please fill in all fields.')
+    return
   }
+
+  if (typeof window !== "undefined" && (window as any).fbq) {
+    (window as any).fbq("track", "InitiateCheckout", {
+      value: finalTotal,
+      currency: "BDT",
+      num_items: items.length,
+    });
+  }
+
+  setError('')
+  setTimeout(() => setStep('payment'), 100)
+}
 
   const heroSummary = (
     <div className="rounded-[26px] border border-[#00612E]/10 bg-white/90 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.05)] backdrop-blur sm:p-5">

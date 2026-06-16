@@ -34,20 +34,25 @@ interface Order {
   order_items: OrderItem[]
 }
 
+interface MonthRevenue {
+  label: string
+  revenue: number
+}
+
 const STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
 
 const statusConfig: Record<string, { color: string; dot: string }> = {
-  pending: { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', dot: 'bg-yellow-400' },
-  confirmed: { color: 'bg-blue-100 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
-  shipped: { color: 'bg-indigo-100 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' },
-  delivered: { color: 'bg-green-100 text-green-700 border-green-200', dot: 'bg-green-500' },
-  cancelled: { color: 'bg-red-100 text-red-700 border-red-200', dot: 'bg-red-400' },
+  pending:   { color: 'bg-yellow-100 text-yellow-700 border-yellow-200', dot: 'bg-yellow-400' },
+  confirmed: { color: 'bg-blue-100 text-blue-700 border-blue-200',       dot: 'bg-blue-500' },
+  shipped:   { color: 'bg-indigo-100 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' },
+  delivered: { color: 'bg-green-100 text-green-700 border-green-200',    dot: 'bg-green-500' },
+  cancelled: { color: 'bg-red-100 text-red-700 border-red-200',          dot: 'bg-red-400' },
 }
 
 const paymentStatusConfig: Record<string, { color: string; label: string }> = {
-  unpaid: { color: 'bg-gray-100 text-gray-600', label: 'Unpaid' },
+  unpaid:               { color: 'bg-gray-100 text-gray-600',    label: 'Unpaid' },
   pending_verification: { color: 'bg-orange-100 text-orange-700', label: '⏳ Verifying' },
-  paid: { color: 'bg-emerald-100 text-emerald-700', label: '✓ Paid' },
+  paid:                 { color: 'bg-emerald-100 text-emerald-700', label: '✓ Paid' },
 }
 
 function formatSleeve(sleeve?: SleeveType | null) {
@@ -60,75 +65,112 @@ function itemKey(item: OrderItem, index: number) {
   return `${item.id}-${item.size ?? 'nosize'}-${item.sleeve ?? 'nosleeve'}-${index}`
 }
 
+// Last 4 মাসের name বানাও
+function getLastMonths(count: number) {
+  const months = []
+  const now = new Date()
+  for (let i = 0; i < count; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    months.push({
+      label: d.toLocaleDateString('en-BD', { month: 'long', year: 'numeric' }),
+      start: new Date(d.getFullYear(), d.getMonth(), 1),
+      end: new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59),
+    })
+  }
+  return months
+}
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthRevenue[]>([])
+  const [showRevenue, setShowRevenue] = useState(false)
 
   useEffect(() => {
-    fetchOrders()
+    init()
   }, [])
 
-  async function fetchOrders() {
-    setLoading(true)
-    const supabase = createClient()
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*, order_items(*)')
-      .order('created_at', { ascending: false })
+async function init() {
+  setLoading(true)
+  const supabase = createClient()
 
-    if (error) {
-      alert(error.message)
-      setOrders([])
-      setLoading(false)
-      return
-    }
+  // ১. আগে সব orders আনো
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*, order_items(*)')
+    .order('created_at', { ascending: false })
 
-    setOrders((data || []) as Order[])
+  if (error) {
+    alert(error.message)
     setLoading(false)
+    return
   }
+
+  const allOrders = (data || []) as Order[]
+
+  // ২. Revenue calculate করো — delete এর আগে
+  const months = getLastMonths(4)
+  const revenueList = months.map(m => {
+    const revenue = allOrders
+      .filter(o =>
+        o.status === 'delivered' &&
+        new Date(o.created_at) >= m.start &&
+        new Date(o.created_at) <= m.end
+      )
+      .reduce((sum, o) => sum + (o.total_amount || 0), 0)
+    return { label: m.label, revenue }
+  })
+  setMonthlyRevenue(revenueList)
+
+  // ৩. তারপর 2 মাসের পুরানো delivered orders delete করো
+  const twoMonthsAgo = new Date()
+  twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2)
+
+  await supabase
+    .from('orders')
+    .delete()
+    .eq('status', 'delivered')
+    .lt('created_at', twoMonthsAgo.toISOString())
+
+  // ৪. Delete এর পরে orders আবার set করো — পুরানোগুলো বাদ দিয়ে
+  const filtered = allOrders.filter(o => {
+    if (o.status !== 'delivered') return true
+    return new Date(o.created_at) >= twoMonthsAgo
+  })
+
+  setOrders(filtered)
+  setLoading(false)
+}
 
   async function updateStatus(id: string, status: string) {
     const supabase = createClient()
     const { error } = await supabase.from('orders').update({ status }).eq('id', id)
-    if (error) {
-      alert(error.message)
-      return
-    }
-    setOrders(prev => prev.map(o => (o.id === id ? { ...o, status } : o)))
+    if (error) { alert(error.message); return }
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o))
   }
 
   async function updatePaymentStatus(id: string, payment_status: string) {
     const supabase = createClient()
     const { error } = await supabase.from('orders').update({ payment_status }).eq('id', id)
-    if (error) {
-      alert(error.message)
-      return
-    }
-    setOrders(prev => prev.map(o => (o.id === id ? { ...o, payment_status } : o)))
+    if (error) { alert(error.message); return }
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, payment_status } : o))
   }
 
   async function deleteOrder(id: string) {
     const ok = window.confirm('Are you sure you want to delete this order? This cannot be undone.')
     if (!ok) return
-
     const supabase = createClient()
     const { error } = await supabase.from('orders').delete().eq('id', id)
-
-    if (error) {
-      alert('Delete failed')
-      return
-    }
-
+    if (error) { alert('Delete failed'); return }
     setOrders(prev => prev.filter(o => o.id !== id))
     if (expandedId === id) setExpandedId(null)
   }
 
-  const filtered =
-    filterStatus === 'all'
-      ? orders
-      : orders.filter(o => o.status === filterStatus)
+  const filtered = filterStatus === 'all'
+    ? orders
+    : orders.filter(o => o.status === filterStatus)
 
   if (loading) {
     return (
@@ -140,13 +182,57 @@ export default function OrdersPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      {/* ── HEADER ── */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Orders</h2>
           <p className="mt-0.5 text-sm text-gray-400">{orders.length} total orders</p>
         </div>
+        <button
+          onClick={() => setShowRevenue(v => !v)}
+          className="rounded-full border border-[#00612E]/20 bg-white px-4 py-2 text-sm font-semibold text-[#00612E] transition hover:bg-[#00612E]/5"
+        >
+          {showRevenue ? '▲ Hide Revenue' : '📊 Monthly Revenue'}
+        </button>
       </div>
 
+      {/* ── MONTHLY REVENUE LIST ── */}
+      {showRevenue && (
+        <div className="mb-6 rounded-2xl border border-[#00612E]/10 bg-white p-5 shadow-sm">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Delivered Revenue — Last 4 Months
+          </p>
+          <div className="space-y-3">
+            {monthlyRevenue.map((m, i) => {
+              const max = Math.max(...monthlyRevenue.map(x => x.revenue), 1)
+              const pct = Math.round((m.revenue / max) * 100)
+              return (
+                <div key={m.label}>
+                  <div className="mb-1 flex items-center justify-between text-sm">
+                    <span className="font-medium text-gray-700">
+                      {i === 0 ? '🟢 ' : ''}{m.label}
+                    </span>
+                    <span className="font-bold text-[#00612E]">
+                      ৳{m.revenue.toLocaleString('en-BD')}
+                    </span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-gray-100">
+                    <div
+                      className="h-2 rounded-full bg-[#00612E] transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          <p className="mt-3 text-xs text-gray-400">
+            * শুধু delivered orders count হয়েছে। 2 মাসের পুরানো delivered orders auto delete হয়।
+          </p>
+        </div>
+      )}
+
+      {/* ── STATUS FILTERS ── */}
       <div className="mb-6 flex flex-wrap gap-2">
         <button
           onClick={() => setFilterStatus('all')}
@@ -173,6 +259,7 @@ export default function OrdersPage() {
         ))}
       </div>
 
+      {/* ── ORDER LIST ── */}
       {filtered.length === 0 ? (
         <div className="rounded-xl bg-white p-16 text-center text-gray-400 shadow-sm">
           No orders found.
@@ -192,6 +279,7 @@ export default function OrdersPage() {
                   isBkash && order.bkash_trx_id ? 'border-pink-100' : 'border-gray-100'
                 }`}
               >
+                {/* bKash banner */}
                 {isBkash && order.bkash_trx_id && (
                   <div className="flex flex-col gap-3 bg-gradient-to-r from-pink-600 to-pink-500 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div className="flex items-center gap-3">
@@ -202,22 +290,23 @@ export default function OrdersPage() {
                         {order.bkash_trx_id}
                       </span>
                     </div>
-                    <div>
-                      <select
-                        value={order.payment_status}
-                        onChange={e => updatePaymentStatus(order.id, e.target.value)}
-                        className={`w-full cursor-pointer rounded-full border-0 px-3 py-1.5 text-xs font-semibold focus:outline-none sm:w-auto ${pc.color}`}
-                      >
-                        <option value="unpaid">Unpaid</option>
-                        <option value="pending_verification">⏳ Verifying</option>
-                        <option value="paid">✓ Paid</option>
-                      </select>
-                    </div>
+                    <select
+                      value={order.payment_status}
+                      onChange={e => updatePaymentStatus(order.id, e.target.value)}
+                      className={`w-full cursor-pointer rounded-full border-0 px-3 py-1.5 text-xs font-semibold focus:outline-none sm:w-auto ${pc.color}`}
+                    >
+                      <option value="unpaid">Unpaid</option>
+                      <option value="pending_verification">⏳ Verifying</option>
+                      <option value="paid">✓ Paid</option>
+                    </select>
                   </div>
                 )}
 
+                {/* Order main row */}
                 <div className="px-4 py-4 sm:px-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+
+                    {/* Product images */}
                     <div className="flex flex-shrink-0 -space-x-3">
                       {order.order_items?.slice(0, 3).map((item, index) => (
                         <div
@@ -225,17 +314,9 @@ export default function OrdersPage() {
                           className="h-12 w-12 overflow-hidden rounded-xl border-2 border-white bg-gray-100 shadow-sm"
                         >
                           {item.product_image ? (
-                            <Image
-                              src={item.product_image}
-                              alt={item.product_name}
-                              width={48}
-                              height={48}
-                              className="h-full w-full object-cover"
-                            />
+                            <Image src={item.product_image} alt={item.product_name} width={48} height={48} className="h-full w-full object-cover" />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center text-gray-300">
-                              📦
-                            </div>
+                            <div className="flex h-full w-full items-center justify-center text-gray-300">📦</div>
                           )}
                         </div>
                       ))}
@@ -246,6 +327,7 @@ export default function OrdersPage() {
                       )}
                     </div>
 
+                    {/* Customer info */}
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-base font-bold text-gray-800">
@@ -254,38 +336,24 @@ export default function OrdersPage() {
                         <span className="rounded-full bg-gray-100 px-2 py-0.5 font-mono text-xs text-gray-400">
                           #{order.id.slice(0, 8).toUpperCase()}
                         </span>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                            isBkash ? 'bg-pink-100 text-pink-700' : 'bg-emerald-100 text-emerald-700'
-                          }`}
-                        >
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${isBkash ? 'bg-pink-100 text-pink-700' : 'bg-emerald-100 text-emerald-700'}`}>
                           {isBkash ? '📱 bKash' : '💵 COD'}
                         </span>
                       </div>
 
                       <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
                         <span>📞 {order.phone || '—'}</span>
-                        <span>
-                          📍 {order.shipping_address}, {order.shipping_city}
-                        </span>
+                        <span>📍 {order.shipping_address}, {order.shipping_city}</span>
                       </div>
 
                       <div className="mt-2 flex flex-wrap gap-2">
                         {order.order_items?.map((item, index) => {
                           const sleeveLabel = formatSleeve(item.sleeve)
-
                           return (
-                            <span
-                              key={itemKey(item, index)}
-                              className="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-600"
-                            >
+                            <span key={itemKey(item, index)} className="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-600">
                               {item.product_name}
                               {item.size ? ` (${item.size})` : ''}
-                              {sleeveLabel ? (
-                                <span className="ml-2 text-sm font-semibold text-[#00612E]">
-                                  • {sleeveLabel}
-                                </span>
-                              ) : null}
+                              {sleeveLabel ? <span className="ml-2 text-sm font-semibold text-[#00612E]">• {sleeveLabel}</span> : null}
                               {' '}×{item.quantity}
                             </span>
                           )
@@ -293,14 +361,13 @@ export default function OrdersPage() {
                       </div>
                     </div>
 
+                    {/* Right side — amount, status, time */}
                     <div className="flex flex-shrink-0 flex-col items-start gap-2 sm:items-end">
                       <span className="text-lg font-bold text-gray-800">
                         ৳{order.total_amount.toLocaleString('en-BD')}
                       </span>
 
-                      <div
-                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${sc.color}`}
-                      >
+                      <div className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${sc.color}`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${sc.dot}`} />
                         <select
                           value={order.status}
@@ -308,19 +375,15 @@ export default function OrdersPage() {
                           className="cursor-pointer border-0 bg-transparent font-medium outline-none"
                         >
                           {STATUSES.map(s => (
-                            <option key={s} value={s} className="bg-white text-gray-800 capitalize">
-                              {s}
-                            </option>
+                            <option key={s} value={s} className="bg-white text-gray-800 capitalize">{s}</option>
                           ))}
                         </select>
                       </div>
 
                       <span className="text-xs text-gray-400">
-                        {new Date(order.created_at).toLocaleDateString('en-BD', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
+                        {new Date(order.created_at).toLocaleDateString('en-BD', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        <br />
+                        {new Date(order.created_at).toLocaleTimeString('en-BD', { hour: '2-digit', minute: '2-digit', hour12: true })}
                       </span>
 
                       <button
@@ -333,6 +396,7 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
+                {/* Expand button */}
                 <button
                   onClick={() => setExpandedId(isExpanded ? null : order.id)}
                   className="flex w-full items-center justify-center gap-1 border-t border-gray-100 py-2 text-xs text-gray-400 transition hover:bg-gray-50 hover:text-gray-600"
@@ -340,72 +404,36 @@ export default function OrdersPage() {
                   {isExpanded ? '▲ Hide details' : '▼ View item details'}
                 </button>
 
+                {/* Expanded details */}
                 {isExpanded && (
                   <div className="space-y-4 border-t border-gray-100 bg-gray-50 px-4 py-5 sm:px-6">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                      Order Items
-                    </p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Order Items</p>
 
                     <div className="space-y-3">
                       {order.order_items?.map((item, index) => {
                         const sleeveLabel = formatSleeve(item.sleeve)
-
                         return (
-                          <div
-                            key={itemKey(item, index)}
-                            className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 sm:flex-row sm:items-center"
-                          >
+                          <div key={itemKey(item, index)} className="flex flex-col gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3 sm:flex-row sm:items-center">
                             <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
                               {item.product_image ? (
-                                <Image
-                                  src={item.product_image}
-                                  alt={item.product_name}
-                                  width={56}
-                                  height={56}
-                                  className="h-full w-full object-cover"
-                                />
+                                <Image src={item.product_image} alt={item.product_name} width={56} height={56} className="h-full w-full object-cover" />
                               ) : (
-                                <div className="flex h-full w-full items-center justify-center text-xl text-gray-300">
-                                  📦
-                                </div>
+                                <div className="flex h-full w-full items-center justify-center text-xl text-gray-300">📦</div>
                               )}
                             </div>
-
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-semibold text-gray-800">
-                                {item.product_name}
-                              </p>
-
+                              <p className="text-sm font-semibold text-gray-800">{item.product_name}</p>
                               <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500">
-                                <span>
-                                  Size:{' '}
-                                  <span className="font-medium text-gray-700">
-                                    {item.size || '—'}
-                                  </span>
-                                </span>
-
-                                {sleeveLabel ? (
+                                <span>Size: <span className="font-medium text-gray-700">{item.size || '—'}</span></span>
+                                {sleeveLabel && (
                                   <span className="rounded-full bg-[#00612E]/8 px-2.5 py-1 text-sm font-semibold text-[#00612E]">
                                     Sleeve: {sleeveLabel}
                                   </span>
-                                ) : null}
-
-                                <span>
-                                  Qty:{' '}
-                                  <span className="font-medium text-gray-700">
-                                    {item.quantity}
-                                  </span>
-                                </span>
-
-                                <span>
-                                  Unit:{' '}
-                                  <span className="font-medium text-gray-700">
-                                    ৳{item.price.toLocaleString('en-BD')}
-                                  </span>
-                                </span>
+                                )}
+                                <span>Qty: <span className="font-medium text-gray-700">{item.quantity}</span></span>
+                                <span>Unit: <span className="font-medium text-gray-700">৳{item.price.toLocaleString('en-BD')}</span></span>
                               </div>
                             </div>
-
                             <p className="self-end text-sm font-bold text-gray-800 sm:self-auto">
                               ৳{(item.price * item.quantity).toLocaleString('en-BD')}
                             </p>

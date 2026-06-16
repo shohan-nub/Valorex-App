@@ -272,6 +272,21 @@ export default function ProductDetailPage() {
   const finalPrice = (product?.price ?? 0) + (sleeve === 'full' ? sleeveExtra : 0)
   const outOfStock = !product || product.stock <= 0
 
+useEffect(() => {
+  if (!product) return;
+
+  if (typeof window !== "undefined" && (window as any).fbq) {
+    (window as any).fbq("track", "ViewContent", {
+      content_ids: [product.id],
+      content_name: product.name,
+      content_type: "product",
+      value: product.price,
+      currency: "BDT",
+    });
+  }
+}, [product]);
+
+
   const avgRating = useMemo(() => {
     if (!reviews.length) return null
     return (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
@@ -287,7 +302,7 @@ export default function ProductDetailPage() {
     if (product.sizes?.length && !selectedSize) return alert('Please select a size')
     if (product.stock <= 0) return alert('Out of stock')
 
-   addItem({
+addItem({
   id: product.id,
   name: product.name,
   price: finalPrice,
@@ -297,7 +312,17 @@ export default function ProductDetailPage() {
   quantity: 1,
 } as any)
 
-    router.push(route)
+if (typeof window !== "undefined" && (window as any).fbq) {
+  (window as any).fbq("track", "AddToCart", {
+    content_ids: [product.id],
+    content_name: product.name,
+    content_type: "product",
+    value: finalPrice,
+    currency: "BDT",
+  });
+}
+
+router.push(route)
   }
 
   if (loading) {
@@ -590,7 +615,28 @@ export default function ProductDetailPage() {
                   <SectionCard title={product.desc_section3_title} body={product.desc_section3_body} />
                 </div>
               )}
+
+              
             </div>
+            <button
+  type="button"
+  onClick={() => {
+    window.open(
+      `https://wa.me/8801829397320?text=${encodeURIComponent(
+        `হ্যালো, আমি আমার জার্সি কাস্টমাইজ করতে চাই.
+
+অফিশিয়াল নাম:
+অফিশিয়াল নম্বর:
+
+প্রোডাক্ট: ${product?.name || ""}`
+      )}`,
+      "_blank"
+    )
+  }}
+  className="w-full rounded-full bg-[#00612E] py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-lg"
+>
+  Customize Jersey
+</button>
           </section>
         </div>
 

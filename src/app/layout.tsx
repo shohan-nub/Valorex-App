@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CartProvider } from "./Cartcontext";
-
 import Footer from "./component/Footer";
 import Script from "next/script";
 import ConditionalNavbar from "./component/condinav";
 
-// ── SEO Metadata ──────────────────────────────────────────────
+const FB_PIXEL_ID =
+  process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID ?? "";
+
 export const metadata: Metadata = {
   title: {
     default: "Valorex — Football Jersey Store in Bangladesh",
@@ -26,15 +27,15 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Valorex" }],
   creator: "Valorex",
-  metadataBase: new URL("https://valorex-app-fawn.vercel.app"),
- icons: {
-  icon: "/icon4.png",
-  apple: "/icon4.png",
-},
+  metadataBase: new URL("https://valorexbd.com"), 
+  icons: {
+    icon: "/icon4.png",
+    apple: "/icon4.png",
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://valorex-app-fawn.vercel.app",
+    url: "https://valorexbd.com", 
     siteName: "Valorex",
     title: "Valorex — Football Jersey Store in Bangladesh",
     description:
@@ -61,9 +62,6 @@ export const metadata: Metadata = {
   },
 };
 
-// ── Facebook Pixel ID ─────────────────────────────────────────
-const FB_PIXEL_ID = "";
-
 export default function RootLayout({
   children,
 }: {
@@ -72,7 +70,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -93,7 +90,6 @@ export default function RootLayout({
             <Footer />
           </div>
 
-          {/* Facebook Pixel — শুধু ID দেওয়া থাকলে load হবে */}
           {FB_PIXEL_ID && (
             <>
               <Script id="fb-pixel" strategy="afterInteractive">

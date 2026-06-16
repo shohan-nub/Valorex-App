@@ -76,10 +76,16 @@ export default function HeroNav() {
     { label: "Home", href: "/" },
     { label: "National", href: "/category/national" },
     { label: "Top Pick", href: "/category/top_pick" },
-    {
-      label: "Customize",
-      href: "https://wa.me/01612389216?text=Hi%20I%20want%20to%20customize%20a%20jersey%20from%20Your%20Premium%20shop",
-    },
+ {
+  label: "Customize",
+  href: `https://wa.me/8801829397320?text=${encodeURIComponent(
+    `হ্যালো, আমি আমার জার্সি কাস্টমাইজ করতে চাই।
+
+অফিশিয়াল নাম:
+অফিশিয়াল নম্বর:`
+  )}`,
+  target: "_blank",
+}
   ];
 
   const linkClass =
